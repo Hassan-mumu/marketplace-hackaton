@@ -18,11 +18,12 @@ export default function WorkspacePage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  // États Authentification
+  // États Authentification (avec Matricule EPHEC)
   const [isRegistering, setIsRegistering] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [matricule, setMatricule] = useState('');
   const [role, setRole] = useState('Fullstack Dev');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
@@ -78,20 +79,46 @@ export default function WorkspacePage() {
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanMatricule = matricule.trim().toUpperCase();
+
+    if (isRegistering) {
+      // 1. Vérification de l'email étudiant EPHEC
+      if (!cleanEmail.endsWith('@students.ephec.be') && !cleanEmail.endsWith('@students.epehc.be')) {
+        return toast.error("Seules les adresses @students.ephec.be sont autorisées à s'inscrire.");
+      }
+
+      // 2. Vérification du matricule (HE + 6 chiffres)
+      const matriculeRegex = /^HE\d{6}$/;
+      if (!matriculeRegex.test(cleanMatricule)) {
+        return toast.error('Le matricule doit commencer par HE suivi de 6 chiffres (ex: HE203456).');
+      }
+    }
+
     setAuthSubmitting(true);
     try {
       if (isRegistering) {
         const { data, error } = await supabase.auth.signUp({
-          email,
+          email: cleanEmail,
           password,
-          options: { data: { display_name: displayName, role } },
+          options: {
+            data: {
+              display_name: displayName.trim(),
+              matricule: cleanMatricule,
+              role,
+            },
+          },
         });
         if (error) throw error;
-        toast.success(`Compte créé avec succès ! Bienvenue ${displayName} 🎉`);
+        toast.success(`Compte créé avec succès ! Bienvenue ${displayName} (${cleanMatricule}) 🎉`);
         setUser(data.user);
         if (data.user) await loadWorkspace(data.user.id);
       } else {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
         if (error) throw error;
         toast.success('Connexion réussie ! 👋');
         setUser(data.user);
@@ -183,62 +210,103 @@ export default function WorkspacePage() {
 
   if (loading) return <p className="text-slate-400">Chargement de votre espace...</p>;
 
-  // 1. ÉCRAN CONNEXION / INSCRIPTION
+  // 1. ÉCRAN CONNEXION / INSCRIPTION RÉSERVÉ AUX ÉTUDIANTS EPHEC
   if (!user) {
     return (
       <form
         onSubmit={handleAuth}
         className="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-4"
       >
-        <h2 className="text-2xl font-bold text-center">
-          {isRegistering ? 'Inscription Rapide Hackathon' : 'Connexion'}
-        </h2>
+        <div className="text-center space-y-1">
+          <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+            Accès Étudiant EPHEC
+          </span>
+          <h2 className="text-2xl font-bold pt-2">
+            {isRegistering ? 'Inscription Hackathon' : 'Connexion Étudiant'}
+          </h2>
+          <p className="text-xs text-slate-400">
+            {isRegistering
+              ? 'Un seul compte par étudiant (1 matricule = 1 voix unique).'
+              : 'Connectez-vous avec votre adresse étudiante.'}
+          </p>
+        </div>
+
         {isRegistering && (
           <>
-            <input
-              type="text"
-              required
-              placeholder="Votre Prénom & Nom (ex: Alex D.)"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm"
-            />
-            <input
-              type="text"
-              placeholder="Votre rôle (ex: Fullstack Dev, UI/UX...)"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm"
-            />
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Prénom & Nom</label>
+              <input
+                type="text"
+                required
+                placeholder="Ex: Cyril Lamand"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Matricule EPHEC (HE + 6 chiffres)</label>
+              <input
+                type="text"
+                required
+                maxLength={8}
+                placeholder="Ex: HE203456"
+                value={matricule}
+                onChange={(e) => setMatricule(e.target.value.toUpperCase())}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm font-mono uppercase tracking-wider focus:border-cyan-400 focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-400 block mb-1">Rôle dans l&apos;équipe</label>
+              <input
+                type="text"
+                placeholder="Ex: Fullstack Dev, UI/UX, Pitch..."
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
+              />
+            </div>
           </>
         )}
-        <input
-          type="email"
-          required
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm"
-        />
-        <input
-          type="password"
-          required
-          placeholder="Mot de passe (min. 6 caractères)"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm"
-        />
+
+        <div>
+          <label className="text-xs text-slate-400 block mb-1">Email étudiant (@students.ephec.be)</label>
+          <input
+            type="email"
+            required
+            placeholder="c.lamand@students.ephec.be"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label className="text-xs text-slate-400 block mb-1">Mot de passe</label>
+          <input
+            type="password"
+            required
+            placeholder="Minimum 6 caractères"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
+          />
+        </div>
+
         <button
           type="submit"
           disabled={authSubmitting}
           className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 font-bold text-sm disabled:opacity-50"
         >
-          {authSubmitting ? 'Chargement...' : isRegistering ? 'Créer mon compte' : 'Se connecter'}
+          {authSubmitting ? 'Vérification...' : isRegistering ? 'Créer mon compte' : 'Se connecter'}
         </button>
+
         <button
           type="button"
           onClick={() => setIsRegistering(!isRegistering)}
-          className="w-full text-xs text-slate-400 hover:text-white text-center"
+          className="w-full text-xs text-slate-400 hover:text-white text-center pt-1"
         >
           {isRegistering ? 'Déjà inscrit ? Se connecter' : 'Pas encore de compte ? S’inscrire'}
         </button>
