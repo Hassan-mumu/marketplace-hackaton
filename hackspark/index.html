@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HackSpark — Plateforme de Projets Hackathon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #0b0d17; color: #f8fafc; }
+    .glass { background: rgba(22, 27, 46, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .btn-gradient { background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%); }
+    .btn-gradient:hover { opacity: 0.92; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- BARRE DE NAVIGATION -->
+  <header class="glass sticky top-0 z-40 px-6 py-4">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-8">
+        <button onclick="switchView('gallery')" class="text-xl font-bold tracking-wider flex items-center gap-2">
+          <span class="w-8 h-8 rounded-lg btn-gradient flex items-center justify-center text-white">⚡</span>
+          <span>HACK<span class="text-cyan-400">SPARK</span></span>
+        </button>
+        <nav class="flex items-center gap-6 text-sm font-medium">
+          <button onclick="switchView('gallery')" id="nav-gallery" class="text-cyan-400 border-b-2 border-cyan-400 pb-1">Galerie des Projets</button>
+          <button onclick="switchView('workspace')" id="nav-workspace" class="text-slate-400 hover:text-white pb-1">Mon Groupe & Espace Projet</button>
+        </nav>
+      </div>
+
+      <!-- STATUT DU VOTE UNIQUE & CONNEXION RAPIDE -->
+      <div class="flex items-center gap-4">
+        <div id="vote-badge" class="px-4 py-1.5 rounded-full text-xs font-semibold btn-gradient text-white shadow-lg">
+          🎟️ 1 Voix Disponible
+        </div>
+
+        <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700 rounded-full px-3 py-1">
+          <span class="text-xs text-slate-400">Participant :</span>
+          <select id="user-select" onchange="changeUser(this.value)" class="bg-transparent text-sm font-medium text-white focus:outline-none cursor-pointer">
+            <option value="u1" class="bg-slate-900">Alex D. (Équipe CyberSync)</option>
+            <option value="u2" class="bg-slate-900">Sarah C. (Sans groupe)</option>
+            <option value="u3" class="bg-slate-900">Lucas M. (Visiteur / Jury)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENU PRINCIPAL -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
+
+    <!-- VUE 1 : GALERIE DES PROJETS -->
+    <section id="view-gallery" class="space-y-8">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold">Galerie des Projets du Hackathon</h1>
+          <p class="text-slate-400 mt-1">Découvrez les projets conçus en 48h et attribuez votre unique voix à votre favori.</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <input type="text" id="search-input" oninput="renderGallery()" placeholder="Rechercher un projet, une équipe..." class="bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400 w-64" />
+        </div>
+      </div>
+
+      <!-- Grille des projets -->
+      <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </section>
+
+    <!-- VUE 2 : DÉTAIL D'UN PROJET -->
+    <section id="view-detail" class="hidden space-y-6">
+      <button onclick="switchView('gallery')" class="text-sm text-slate-400 hover:text-white flex items-center gap-2">
+        ← Retour à la galerie
+      </button>
+      <div id="project-detail-content"></div>
+    </section>
+
+    <!-- VUE 3 : ESPACE GROUPE & ÉDITEUR DE PROJET -->
+    <section id="view-workspace" class="hidden">
+      <div id="workspace-content"></div>
+    </section>
+
+  </main>
+
+  <script>
+    // --- ÉTAT INITIAL DE L'APPLICATION (MOCK DATA) ---
+    const state = {
+      currentUserId: 'u1',
+      users: {
+        u1: { id: 'u1', name: 'Alex D.', role: 'Fullstack Dev', groupId: 'g1', votedProjectId: null },
+        u2: { id: 'u2', name: 'Sarah C.', role: 'UI/UX Designer', groupId: null, votedProjectId: null },
+        u3: { id: 'u3', name: 'Lucas M.', role: 'Data Scientist', groupId: null, votedProjectId: 'p2' }
+      },
+      groups: [
+        {
+          id: 'g1',
+          name: 'CyberSync',
+          inviteCode: '482905',
+          members: [
+            { name: 'Alex D.', role: 'Fullstack Dev' },
+            { name: 'Aisha K.', role: 'AI Engineer' },
+            { name: 'Maxim R.', role: 'UI/UX Designer' }
+          ]
+        },
+        {
+          id: 'g2',
+          name: 'BioCode',
+          inviteCode: '739104',
+          members: [
+            { name: 'Chloé V.', role: 'Backend Dev' },
+            { name: 'Nathan T.', role: 'Product Lead' }
+          ]
+        }
+      ],
+      projects: [
+        {
+          id: 'p1',
+          groupId: 'g1',
+          title: 'EcoSphere AI',
+          description: 'Tableau de bord intelligent permettant de surveiller et optimiser l\'empreinte écologique des espaces verts urbains en temps réel grâce à des capteurs IoT et au Machine Learning.',
+          imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80',
+          videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          tags: ['IA / ML', 'React', 'Python'],
+          votesCount: 42,
+          isPublished: true
+        },
+        {
+          id: 'p2',
+          groupId: 'g2',
+          title: 'HealthFlow',
+          description: 'Application de diagnostic préventif en temps réel connectée aux objets portables médicaux pour assister les équipes d\'urgence lors d\'interventions rapides.',
+          imageUrl: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=900&q=80',
+          videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+          tags: ['HealthTech', 'FastAPI', 'Mobile'],
+          votesCount: 38,
+          isPublished: true
+        }
+      ]
+    };
+
+    // --- NAVIGATION & GESTION DES UTILISATEURS ---
+    function getCurrentUser() {
+      return state.users[state.currentUserId];
+    }
+
+    function changeUser(userId) {
+      state.currentUserId = userId;
+      updateVoteBadge();
+      renderGallery();
+      renderWorkspace();
+    }
+
+    function switchView(viewName) {
+      document.getElementById('view-gallery').classList.add('hidden');
+      document.getElementById('view-detail').classList.add('hidden');
+      document.getElementById('view-workspace').classList.add('hidden');
+
+      document.getElementById('nav-gallery').className = 'text-slate-400 hover:text-white pb-1';
+      document.getElementById('nav-workspace').className = 'text-slate-400 hover:text-white pb-1';
+
+      if (viewName === 'gallery') {
+        document.getElementById('view-gallery').classList.remove('hidden');
+        document.getElementById('nav-gallery').className = 'text-cyan-400 border-b-2 border-cyan-400 pb-1';
+        renderGallery();
+      } else if (viewName === 'workspace') {
+        document.getElementById('view-workspace').classList.remove('hidden');
+        document.getElementById('nav-workspace').className = 'text-cyan-400 border-b-2 border-cyan-400 pb-1';
+        renderWorkspace();
+      } else if (viewName === 'detail') {
+        document.getElementById('view-detail').classList.remove('hidden');
+      }
+    }
+
+    function updateVoteBadge() {
+      const user = getCurrentUser();
+      const badge = document.getElementById('vote-badge');
+      if (user.votedProjectId) {
+        const proj = state.projects.find(p => p.id === user.votedProjectId);
+        badge.className = 'px-4 py-1.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+        badge.innerHTML = `✅ Voix attribuée : ${proj ? proj.title : ''}`;
+      } else {
+        badge.className = 'px-4 py-1.5 rounded-full text-xs font-semibold btn-gradient text-white shadow-lg';
+        badge.innerHTML = `🎟️ 1 Voix Disponible`;
+      }
+    }
+
+    // --- SYSTÈME DE VOTE UNIQUE ---
+    function toggleVote(projectId, event) {
+      if (event) event.stopPropagation();
+      const user = getCurrentUser();
+      const targetProject = state.projects.find(p => p.id === projectId);
+
+      // Si l'utilisateur clique sur le projet pour lequel il a déjà voté -> annuler son vote
+      if (user.votedProjectId === projectId) {
+        targetProject.votesCount--;
+        user.votedProjectId = null;
+      } else {
+        // S'il avait déjà voté pour un autre projet -> déplacer sa voix unique
+        if (user.votedProjectId) {
+          const previousProject = state.projects.find(p => p.id === user.votedProjectId);
+          if (previousProject) previousProject.votesCount--;
+        }
+        targetProject.votesCount++;
+        user.votedProjectId = projectId;
+      }
+
+      updateVoteBadge();
+      renderGallery();
+      if (!document.getElementById('view-detail').classList.contains('hidden')) {
+        openProjectDetail(projectId);
+      }
+    }
+
+    // --- RENDU DE LA GALERIE ---
+    function renderGallery() {
+      const grid = document.getElementById('projects-grid');
+      const query = (document.getElementById('search-input')?.value || '').toLowerCase();
+      const user = getCurrentUser();
+
+      const publishedProjects = state.projects.filter(p => {
+        const group = state.groups.find(g => g.id === p.groupId);
+        const matchesSearch = p.title.toLowerCase().includes(query) ||
+                              p.description.toLowerCase().includes(query) ||
+                              (group && group.name.toLowerCase().includes(query));
+        return p.isPublished && matchesSearch;
+      });
+
+      grid.innerHTML = publishedProjects.map(project => {
+        const group = state.groups.find(g => g.id === project.groupId);
+        const hasVotedForThis = user.votedProjectId === project.id;
+
+        return `
+          <div onclick="openProjectDetail('${project.id}')" class="glass rounded-2xl overflow-hidden hover:border-cyan-400/50 transition cursor-pointer flex flex-col justify-between">
+            <div>
+              <div class="relative h-48 overflow-hidden bg-slate-900">
+                <img src="${project.imageUrl}" alt="${project.title}" class="w-full h-full object-cover" />
+                <span class="absolute top-3 left-3 bg-slate-950/80 backdrop-blur px-3 py-1 rounded-full text-xs font-medium text-cyan-300 border border-cyan-500/30">
+                  Par ${group ? group.name : 'Équipe'}
+                </span>
+              </div>
+              <div class="p-5">
+                <h3 class="text-xl font-bold text-white">${project.title}</h3>
+                <p class="text-sm text-slate-400 mt-2 line-clamp-2">${project.description}</p>
+                <div class="flex flex-wrap gap-2 mt-4">
+                  ${project.tags.map(t => `<span class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-md border border-slate-700">${t}</span>`).join('')}
+                </div>
+              </div>
+            </div>
+            <div class="px-5 py-4 border-t border-slate-800/80 flex items-center justify-between">
+              <span class="text-sm font-semibold text-slate-300">❤️ ${project.votesCount} voix</span>
+              <button onclick="toggleVote('${project.id}', event)" class="px-4 py-1.5 rounded-full text-xs font-semibold transition ${
+                hasVotedForThis
+                  ? 'bg-emerald-500 text-slate-950 font-bold'
+                  : 'btn-gradient text-white'
+              }">
+                ${hasVotedForThis ? '✓ Votre choix (Retirer)' : (user.votedProjectId ? 'Déplacer ma voix ici' : 'Voter')}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // --- RENDU DE LA PAGE DÉTAIL D'UN PROJET ---
+    function openProjectDetail(projectId) {
+      const project = state.projects.find(p => p.id === projectId);
+      const group = state.groups.find(g => g.id === project.groupId);
+      const user = getCurrentUser();
+      const hasVotedForThis = user.votedProjectId === project.id;
+
+      const container = document.getElementById('project-detail-content');
+      container.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Colonne principale : Vidéo, Image & Description -->
+          <div class="lg:col-span-2 space-y-6">
+            <div class="glass rounded-2xl overflow-hidden p-2">
+              <video controls poster="${project.imageUrl}" class="w-full h-80 object-cover rounded-xl bg-black">
+                <source src="${project.videoUrl}" type="video/mp4" />
+                Votre navigateur ne supporte pas la lecture vidéo.
+              </video>
+            </div>
+
+            <div class="glass rounded-2xl p-6 space-y-4">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h1 class="text-3xl font-bold">${project.title}</h1>
+                <span class="text-sm text-cyan-400 font-medium">Groupe : ${group.name}</span>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                ${project.tags.map(t => `<span class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">${t}</span>`).join('')}
+              </div>
+              <hr class="border-slate-800" />
+              <h2 class="text-lg font-semibold">À propos du projet</h2>
+              <p class="text-slate-300 leading-relaxed whitespace-pre-line">${project.description}</p>
+            </div>
+          </div>
+
+          <!-- Colonne latérale : Vote & Participants à la conception -->
+          <div class="space-y-6">
+            <div class="glass rounded-2xl p-6 text-center space-y-4">
+              <button onclick="toggleVote('${project.id}', event)" class="w-full py-3 rounded-xl font-bold text-sm transition shadow-lg ${
+                hasVotedForThis ? 'bg-emerald-500 text-slate-950' : 'btn-gradient text-white'
+              }">
+                ${hasVotedForThis ? '✓ Vous soutenez ce projet' : 'Attribuer mon unique voix'}
+              </button>
+              <div class="text-2xl font-bold text-white">${project.votesCount} <span class="text-sm font-normal text-slate-400">voix reçues</span></div>
+            </div>
+
+            <div class="glass rounded-2xl p-6 space-y-4">
+              <h3 class="text-lg font-semibold">Ont participé à la conception</h3>
+              <div class="space-y-3">
+                ${group.members.map(m => `
+                  <div class="flex items-center gap-3 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                    <div class="w-10 h-10 rounded-full btn-gradient flex items-center justify-center font-bold text-sm">
+                      ${m.name.charAt(0)}
+                    </div>
+                    <div>
+                      <div class="font-medium text-sm text-white">${m.name}</div>
+                      <div class="text-xs text-slate-400">${m.role}</div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      switchView('detail');
+    }
+
+    // --- RENDU DE L'ESPACE GROUPE & ÉDITEUR DE PROJET ---
+    function renderWorkspace() {
+      const container = document.getElementById('workspace-content');
+      const user = getCurrentUser();
+
+      // Si l'utilisateur n'appartient à aucun groupe -> Écran pour Rejoindre ou Créer un groupe
+      if (!user.groupId) {
+        container.innerHTML = `
+          <div class="max-w-xl mx-auto glass rounded-2xl p-8 space-y-6 text-center">
+            <div class="w-14 h-14 rounded-2xl btn-gradient mx-auto flex items-center justify-center text-2xl">👥</div>
+            <h2 class="text-2xl font-bold">Rejoindre ou Créer un Groupe</h2>
+            <p class="text-slate-400 text-sm">Vous devez faire partie d'un groupe pour accéder à l'espace de conception et publier le projet de votre équipe.</p>
+
+            <!-- Rejoindre avec un code -->
+            <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 space-y-3 text-left">
+              <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rejoindre un groupe existant (Code à 6 chiffres)</label>
+              <div class="flex gap-3">
+                <input id="join-code-input" type="text" maxlength="6" placeholder="Ex: 482905" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-center font-mono text-lg tracking-widest focus:outline-none focus:border-cyan-400" />
+                <button onclick="joinGroupByCode()" class="px-5 py-2.5 rounded-xl btn-gradient font-semibold text-sm">Rejoindre</button>
+              </div>
+              <p class="text-xs text-slate-500">Astuce test : utilisez le code <span class="text-cyan-400 font-mono">482905</span> (CyberSync) ou <span class="text-cyan-400 font-mono">739104</span> (BioCode).</p>
+            </div>
+
+            <div class="text-xs text-slate-500 uppercase">OU</div>
+
+            <!-- Créer un nouveau groupe -->
+            <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 space-y-3 text-left">
+              <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Créer une nouvelle équipe</label>
+              <div class="flex gap-3">
+                <input id="new-group-name" type="text" placeholder="Nom de votre groupe (ex: Team Nova)" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400" />
+                <button onclick="createNewGroup()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 font-semibold text-sm">Créer</button>
+              </div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // Si l'utilisateur est membre d'un groupe -> Affichage de l'Espace Projet du Groupe
+      const group = state.groups.find(g => g.id === user.groupId);
+      const project = state.projects.find(p => p.groupId === group.id);
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <!-- Colonne Gauche : Infos Groupe & Coéquipiers -->
+          <div class="space-y-6">
+            <div class="glass rounded-2xl p-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <span class="text-xs uppercase tracking-wider text-cyan-400 font-semibold">Mon Groupe</span>
+                <button onclick="leaveGroup()" class="text-xs text-rose-400 hover:underline">Quitter le groupe</button>
+              </div>
+              <h2 class="text-2xl font-bold">${group.name}</h2>
+              <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
+                <span class="text-xs text-slate-400">Code d'invitation :</span>
+                <span class="font-mono font-bold text-cyan-400 tracking-widest text-lg">${group.inviteCode}</span>
+              </div>
+            </div>
+
+            <div class="glass rounded-2xl p-6 space-y-4">
+              <h3 class="font-semibold">Membres ayant participé (${group.members.length})</h3>
+              <div class="space-y-2.5">
+                ${group.members.map(m => `
+                  <div class="flex items-center justify-between bg-slate-900/70 px-3.5 py-2.5 rounded-xl border border-slate-800">
+                    <div>
+                      <div class="text-sm font-medium">${m.name}</div>
+                      <div class="text-xs text-slate-400">${m.role}</div>
+                    </div>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                  </div>
+                `).join('')}
+              </div>
+
+              <!-- Ajouter un participant -->
+              <div class="pt-3 border-t border-slate-800 space-y-2">
+                <input id="new-member-name" type="text" placeholder="Nom du coéquipier" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs" />
+                <input id="new-member-role" type="text" placeholder="Rôle (ex: Designer, Pitch, Backend)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs" />
+                <button onclick="addTeamMember()" class="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold border border-slate-700">+ Ajouter à l'équipe</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Colonne Droite : Éditeur du Projet associé au Groupe -->
+          <div class="lg:col-span-2 glass rounded-2xl p-6 space-y-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-4">
+              <div>
+                <h2 class="text-xl font-bold">Espace Projet de l'Équipe</h2>
+                <p class="text-xs text-slate-400">Chaque modification est partagée avec les membres du groupe ${group.name}.</p>
+              </div>
+              <span class="px-3 py-1 rounded-full text-xs font-semibold ${project.isPublished ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'}">
+                ${project.isPublished ? '● Publié dans la galerie' : '● Brouillon (Non visible)'}
+              </span>
+            </div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Titre du Projet</label>
+                <input id="edit-title" type="text" value="${project.title}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400" />
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Description détaillée</label>
+                <textarea id="edit-desc" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400">${project.description}</textarea>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">URL de l'image de couverture</label>
+                  <input id="edit-img" type="text" value="${project.imageUrl}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">URL de la vidéo promotionnelle (MP4)</label>
+                  <input id="edit-video" type="text" value="${project.videoUrl}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400" />
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Technologies / Tags (séparés par des virgules)</label>
+                <input id="edit-tags" type="text" value="${project.tags.join(', ')}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400" />
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-slate-800">
+              <button onclick="saveProject(false)" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-semibold border border-slate-700">
+                Enregistrer en brouillon
+              </button>
+              <button onclick="saveProject(true)" class="px-6 py-2.5 rounded-xl btn-gradient text-sm font-bold text-white shadow-lg">
+                🚀 Enregistrer & Publier le Projet
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // --- ACTIONS SUR LES GROUPES & PROJETS ---
+    function joinGroupByCode() {
+      const code = document.getElementById('join-code-input').value.trim();
+      const group = state.groups.find(g => g.inviteCode === code);
+      if (!group) {
+        alert("Aucun groupe trouvé avec ce code d'invitation.");
+        return;
+      }
+      const user = getCurrentUser();
+      user.groupId = group.id;
+      if (!group.members.some(m => m.name === user.name)) {
+        group.members.push({ name: user.name, role: user.role });
+      }
+      renderWorkspace();
+    }
+
+    function createNewGroup() {
+      const name = document.getElementById('new-group-name').value.trim();
+      if (!name) {
+        alert("Veuillez saisir un nom de groupe.");
+        return;
+      }
+      const user = getCurrentUser();
+      const newGroupId = 'g_' + Date.now();
+      const inviteCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+      // 1. Création du groupe
+      state.groups.push({
+        id: newGroupId,
+        name: name,
+        inviteCode: inviteCode,
+        members: [{ name: user.name, role: user.role }]
+      });
+
+      // 2. Association automatique d'un projet vierge à ce groupe (Relation 1-1)
+      state.projects.push({
+        id: 'p_' + Date.now(),
+        groupId: newGroupId,
+        title: `Projet de ${name}`,
+        description: 'Décrivez ici votre innovation conçue pendant le Hackathon...',
+        imageUrl: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=80',
+        videoUrl: 'https://www.w3schools.com/html/mov_bbb.mp4',
+        tags: ['Hackathon', 'Innovation'],
+        votesCount: 0,
+        isPublished: false
+      });
+
+      user.groupId = newGroupId;
+      renderWorkspace();
+    }
+
+    function leaveGroup() {
+      const user = getCurrentUser();
+      user.groupId = null;
+      renderWorkspace();
+    }
+
+    function addTeamMember() {
+      const name = document.getElementById('new-member-name').value.trim();
+      const role = document.getElementById('new-member-role').value.trim() || 'Contributeur';
+      if (!name) return;
+
+      const user = getCurrentUser();
+      const group = state.groups.find(g => g.id === user.groupId);
+      group.members.push({ name, role });
+      renderWorkspace();
+    }
+
+    function saveProject(publish) {
+      const user = getCurrentUser();
+      const project = state.projects.find(p => p.groupId === user.groupId);
+
+      project.title = document.getElementById('edit-title').value.trim() || 'Sans titre';
+      project.description = document.getElementById('edit-desc').value.trim();
+      project.imageUrl = document.getElementById('edit-img').value.trim();
+      project.videoUrl = document.getElementById('edit-video').value.trim();
+      project.tags = document.getElementById('edit-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+      project.isPublished = publish;
+
+      if (publish) {
+        switchView('gallery');
+      } else {
+        renderWorkspace();
+      }
+    }
+
+    // Initialisation au chargement
+    updateVoteBadge();
+    renderGallery();
+  </script>
+</body>
+</html>
