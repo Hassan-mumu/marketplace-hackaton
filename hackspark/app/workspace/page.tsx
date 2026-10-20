@@ -89,10 +89,10 @@ export default function WorkspacePage() {
         return toast.error("Seules les adresses @students.ephec.be sont autorisées à s'inscrire.");
       }
 
-      // 2. Vérification du matricule (HE + 6 chiffres)
-      const matriculeRegex = /^HE\d{6}$/;
+      // 2. Vérification du format du matricule (HE + 6 chiffres, ou ERA/BDA + 5 chiffres)
+      const matriculeRegex = /^(HE\d{6}|ERA\d{5}|BDA\d{5})$/;
       if (!matriculeRegex.test(cleanMatricule)) {
-        return toast.error('Le matricule doit commencer par HE suivi de 6 chiffres (ex: HE203456).');
+        return toast.error('Format de matricule invalide (ex: HExxxxxx, ERAxxxxx ou BDAxxxxx).');
       }
     }
 
@@ -238,7 +238,7 @@ export default function WorkspacePage() {
               <input
                 type="text"
                 required
-                placeholder="Ex: Cyril Lamand"
+                placeholder="Ex: Victor Popovitch"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
@@ -246,7 +246,7 @@ export default function WorkspacePage() {
             </div>
 
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Matricule EPHEC (HE + 6 chiffres)</label>
+              <label className="text-xs text-slate-400 block mb-1">Matricule EPHEC (HE/ERA/BDA + 6 chiffres)</label>
               <input
                 type="text"
                 required

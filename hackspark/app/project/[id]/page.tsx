@@ -1,65 +1,86 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { getProjectById, getUserVote, toggleUniqueVote } from '@/services/hackathon.services';
+import { getProjectById, getUserBudget, investCyberCoins, checkIfAdmin } from '@/services/hackathon.services';
 import { toast } from 'sonner';
 
-export default function ProjectDetailPage() {
+// Composant enfant qui contient toute la logique et le useParams
+function ProjectDetailContent() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
   const [project, setProject] = useState<any>(null);
   const [members, setMembers] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
-  const [myVoteProjectId, setMyVoteProjectId] = useState<string | null>(null);
+  const [budget, setBudget] = useState<number>(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userGroupId, setUserGroupId] = useState<string | null>(null);
+  const [investAmount, setInvestAmount] = useState(50);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadDetail();
   }, [id]);
 
   async function loadDetail() {
+    setLoading(true);
     try {
-      const [{ project: proj, members: team }, { data: sessionData }] = await Promise.all([
-        getProjectById(id),
-        supabase.auth.getSession(),
-      ]);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const currentUser = sessionData.session?.user ?? null;
+      setUser(currentUser);
+
+      const { project: proj, members: team } = await getProjectById(id);
       setProject(proj);
       setMembers(team);
 
-      const currentUser = sessionData.session?.user ?? null;
-      setUser(currentUser);
       if (currentUser) {
-        const votedId = await getUserVote(currentUser.id);
-        setMyVoteProjectId(votedId);
+        const [remaining, adminStatus, membership] = await Promise.all([
+          getUserBudget(currentUser.id),
+          checkIfAdmin(currentUser.id),
+          supabase.from('group_members').select('group_id').eq('user_id', currentUser.id).maybeSingle(),
+        ]);
+        
+        setBudget(remaining);
+        setIsAdmin(adminStatus);
+        setUserGroupId(membership.data?.group_id || null);
       }
     } catch (err: any) {
       toast.error('Projet introuvable : ' + err.message);
+    } finally {
+      setLoading(false);
     }
   }
 
-  async function handleVote() {
+  async function handleInvest() {
     if (!user) {
-      toast.warning('Connectez-vous pour pouvoir voter !');
+      toast.warning('Connectez-vous pour pouvoir investir !');
       return;
     }
+    if (investAmount <= 0 || investAmount > budget) {
+      toast.error("Montant invalide ou budget insuffisant.");
+      return;
+    }
+
     try {
-      const res = await toggleUniqueVote(user.id, project.id, myVoteProjectId);
-      setMyVoteProjectId(res.votedProjectId);
-      window.dispatchEvent(new Event('vote-updated'));
-
-      if (res.action === 'added') toast.success('Vote enregistré pour ce projet ! 🎉');
-      if (res.action === 'moved') toast.info('Votre voix a été déplacée sur ce projet.');
-      if (res.action === 'removed') toast('Votre vote a été retiré.');
-
+      const res = await investCyberCoins(user.id, project.id, investAmount);
+      setBudget(res.remaining_budget);
+      toast.success(`Investissement de ${investAmount} Cyber-Coins réussi ! 🚀`);
+      
+      window.dispatchEvent(new CustomEvent('budget-updated', { detail: res.remaining_budget }));
       await loadDetail();
+      setInvestAmount(50);
     } catch (err: any) {
       toast.error(err.message);
     }
   }
 
-  if (!project) return <p className="text-slate-400">Chargement du projet...</p>;
+  if (loading || !project) return <p className="text-slate-400">Chargement du projet...</p>;
+
+  const isMyProject = userGroupId === project.group_id_direct;
+  const myInvestments = (project.investments_data || []).filter((inv: any) => inv.user_id === user?.id);
+  const myTotalInvestment = myInvestments.reduce((acc: number, curr: any) => acc + curr.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -68,6 +89,7 @@ export default function ProjectDetailPage() {
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* COLONNE GAUCHE */}
         <div className="lg:col-span-2 space-y-6">
           {project.video_url ? (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-2">
@@ -81,34 +103,77 @@ export default function ProjectDetailPage() {
             )
           )}
 
-          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4 relative overflow-hidden">
+            {isMyProject && (
+              <div className="absolute top-0 right-0 bg-indigo-600 text-white px-4 py-1.5 rounded-bl-xl font-bold text-xs shadow-md">
+                ★ C'est votre projet
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">{project.title}</h1>
-              <span className="text-sm text-cyan-400">Groupe : {project.group_name}</span>
+              <span className="text-sm text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+                Groupe : {project.group_name}
+              </span>
             </div>
             <p className="text-slate-300 whitespace-pre-line leading-relaxed">{project.description}</p>
           </div>
         </div>
 
+        {/* COLONNE DROITE */}
         <div className="space-y-6">
-          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 text-center space-y-4">
-            <button
-              onClick={handleVote}
-              className={`w-full py-3 rounded-xl font-bold text-sm transition ${
-                myVoteProjectId === project.id
-                  ? 'bg-emerald-500 text-slate-950'
-                  : 'bg-gradient-to-r from-indigo-500 to-cyan-500 text-white'
-              }`}
-            >
-              {myVoteProjectId === project.id ? '✓ Vous soutenez ce projet' : 'Attribuer mon unique voix'}
-            </button>
-            <div className="text-2xl font-bold">
-              {project.votes_count} <span className="text-sm font-normal text-slate-400">voix reçues</span>
-            </div>
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 text-center space-y-6">
+            {isAdmin ? (
+              <div className="space-y-1">
+                <div className="text-xs uppercase text-amber-500 font-bold tracking-wider">Vue Administrateur</div>
+                <div className="text-3xl font-bold text-amber-400">
+                  {project.total_funds} <span className="text-sm font-normal text-slate-400">Cyber-Coins levés</span>
+                </div>
+                <div className="text-xs text-slate-400">{project.investors_count} investisseurs</div>
+              </div>
+            ) : myTotalInvestment > 0 ? (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl">
+                <div className="text-sm text-emerald-400 mb-1">✓ Vous avez investi :</div>
+                <div className="text-2xl font-bold text-emerald-300">{myTotalInvestment} CC</div>
+              </div>
+            ) : (
+              <div className="text-sm text-slate-400">Vous n'avez pas encore investi dans ce projet.</div>
+            )}
+
+            {!isMyProject && (
+              <div className="space-y-3 pt-4 border-t border-slate-800">
+                <label className="text-xs font-semibold text-slate-400 uppercase">Soutenir ce projet</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min="10"
+                    max={budget > 0 ? budget : 10}
+                    value={investAmount}
+                    onChange={(e) => setInvestAmount(Number(e.target.value))}
+                    disabled={budget <= 0}
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-center font-mono disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleInvest}
+                    disabled={budget <= 0}
+                    className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-cyan-500 text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Investir
+                  </button>
+                </div>
+                {budget > 0 ? (
+                  <div className="text-xs text-slate-400">Budget dispo : <span className="text-amber-400 font-bold">{budget} CC</span></div>
+                ) : (
+                  <div className="text-xs text-rose-400">Votre budget est épuisé.</div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-4">
-            <h3 className="font-semibold text-lg">Ont participé à la conception</h3>
+            <h3 className="font-semibold text-lg flex items-center justify-between">
+              Équipe de conception
+              <span className="text-xs font-normal text-slate-500">{members.length} membres</span>
+            </h3>
             <div className="space-y-3">
               {members.map((m) => (
                 <div key={m.user_id} className="flex items-center gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800">
@@ -126,5 +191,14 @@ export default function ProjectDetailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Composant principal exporté qui enveloppe le contenu dans Suspense
+export default function ProjectDetailPage() {
+  return (
+    <Suspense fallback={<div className="text-slate-400 flex justify-center py-10">Chargement de la page...</div>}>
+      <ProjectDetailContent />
+    </Suspense>
   );
 }

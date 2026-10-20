@@ -1,16 +1,55 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from '@/lib/supabase';
 
-// --- GALERIE & PROJETS PUBLICS ---
-export async function getPublishedProjects() {
-  const { data, error } = await supabase
+// --- GALERIE & PROJETS PUBLICS (CROWDFUNDING CONFIDENTIEL) ---
+export async function getPublishedProjects(userId: string | null = null) {
+  // 1. On récupère d'abord tous les projets publiés
+  const { data: projects, error } = await supabase
     .from('projects_with_stats')
     .select('*')
     .eq('is_published', true)
-    .order('votes_count', { ascending: false });
+    .order('total_funds', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  if (!projects || projects.length === 0) return [];
+
+  // 2. Si personne n'est connecté, on masque toutes les infos d'argent
+  if (!userId) {
+    return projects.map((p) => ({
+      ...p,
+      total_funds: 0,
+      investors_count: 0,
+      my_investment: 0,
+      investments_data: undefined, // Sécurité : on efface la trace brute
+    }));
+  }
+
+  // 3. On vérifie si l'utilisateur connecté est un Admin et on récupère son groupe
+  const [{ data: profile }, { data: membership }] = await Promise.all([
+    supabase.from('student_profiles').select('is_admin').eq('user_id', userId).maybeSingle(),
+    supabase.from('group_members').select('group_id').eq('user_id', userId).maybeSingle(),
+  ]);
+
+  const isAdmin = profile?.is_admin || false;
+  const userGroupId = membership?.group_id || null;
+
+  // 4. On filtre les données avant de les envoyer au navigateur
+  return projects.map((p) => {
+    // Calculer combien l'utilisateur courant a investi dans ce projet
+    const myInvestments = (p.investments_data as any[] || []).filter((inv) => inv.user_id === userId);
+    const myTotalInvestment = myInvestments.reduce((acc, curr) => acc + curr.amount, 0);
+
+    return {
+      ...p,
+      my_investment: myTotalInvestment,
+      is_my_group: p.group_id_direct === userGroupId, // Vrai si c'est le projet de l'étudiant
+      // Si Admin : on laisse les vrais totaux. Si Étudiant : on les masque à 0.
+      total_funds: isAdmin ? p.total_funds : 0,
+      investors_count: isAdmin ? p.investors_count : 0,
+      is_admin: isAdmin,
+      investments_data: undefined, // Toujours effacer la liste brute par sécurité
+    };
+  });
 }
 
 export async function getProjectById(projectId: string) {
@@ -30,29 +69,49 @@ export async function getProjectById(projectId: string) {
   return { project, members: members || [] };
 }
 
-// --- SYSTÈME DE VOTE UNIQUE ---
-export async function getUserVote(userId: string) {
+// --- SYSTÈME D'INVESTISSEMENT (CROWDFUNDING EN CYBER-COINS) ---
+export async function getUserBudget(userId: string) {
+  const { data, error } = await supabase
+    .from('investments')
+    .select('amount')
+    .eq('user_id', userId);
+
+  if (error) return 500;
+  const spent = (data || []).reduce((acc: number, curr: any) => acc + curr.amount, 0);
+  return 500 - spent;
+}
+
+export async function investCyberCoins(userId: string, projectId: string, amount: number) {
+  const { data, error } = await supabase.rpc('invest_in_project', {
+    p_user_id: userId,
+    p_project_id: projectId,
+    p_amount: amount,
+  });
+
+  if (error) throw error;
+  if (!data.success) throw new Error(data.error);
+  return data;
+}
+
+export async function checkIfAdmin(userId: string) {
   const { data } = await supabase
-    .from('votes')
-    .select('project_id')
+    .from('student_profiles')
+    .select('is_admin')
     .eq('user_id', userId)
     .maybeSingle();
 
-  return data?.project_id ?? null;
+  return data?.is_admin ?? false;
 }
 
-export async function toggleUniqueVote(userId: string, projectId: string, currentVotedId: string | null) {
-  if (currentVotedId === projectId) {
-    const { error } = await supabase.from('votes').delete().eq('user_id', userId);
-    if (error) throw error;
-    return { action: 'removed', votedProjectId: null };
-  } else {
-    const { error } = await supabase
-      .from('votes')
-      .upsert({ user_id: userId, project_id: projectId }, { onConflict: 'user_id' });
-    if (error) throw error;
-    return { action: currentVotedId ? 'moved' : 'added', votedProjectId: projectId };
-  }
+// --- VALIDATION EPHEC (LISTE BLANCHE) ---
+export async function checkStudentEligibility(matricule: string, email: string) {
+  const { data, error } = await supabase.rpc('verify_student_eligibility', {
+    p_matricule: matricule,
+    p_email: email,
+  });
+
+  if (error) throw error;
+  return data as { allowed: boolean; error?: string };
 }
 
 // --- GROUPES & ESPACE PROJET ---

@@ -3,14 +3,14 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { getPublishedProjects, getUserVote, toggleUniqueVote } from '@/services/hackathon.services';
+import { getPublishedProjects, getUserBudget, investCyberCoins } from '@/services/hackathon.services';
 import ProjectCard from '@/components/ProjectCard';
 import { toast } from 'sonner';
 
 export default function GalleryPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [user, setUser] = useState<any>(null);
-  const [myVoteProjectId, setMyVoteProjectId] = useState<string | null>(null);
+  const [budget, setBudget] = useState<number>(0);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -18,20 +18,22 @@ export default function GalleryPage() {
     loadGallery();
   }, []);
 
-  async function loadGallery() {
+ async function loadGallery() {
     setLoading(true);
     try {
-      const [{ data: sessionData }, projectsData] = await Promise.all([
-        supabase.auth.getSession(),
-        getPublishedProjects(),
-      ]);
-      setProjects(projectsData);
-
+      // 1. Récupérer d'abord la session utilisateur
+      const { data: sessionData } = await supabase.auth.getSession();
       const currentUser = sessionData.session?.user ?? null;
       setUser(currentUser);
+
+      // 2. Charger les projets EN PASSANT l'ID de l'utilisateur (pour le filtrage côté serveur)
+      const projectsData = await getPublishedProjects(currentUser?.id);
+      setProjects(projectsData);
+      
+      // 3. Charger le budget si l'utilisateur est connecté
       if (currentUser) {
-        const votedId = await getUserVote(currentUser.id);
-        setMyVoteProjectId(votedId);
+        const remaining = await getUserBudget(currentUser.id);
+        setBudget(remaining);
       }
     } catch (err: any) {
       toast.error('Erreur de chargement : ' + err.message);
@@ -40,26 +42,31 @@ export default function GalleryPage() {
     }
   }
 
-  async function handleVote(projectId: string, e: React.MouseEvent) {
+  // ET DANS handleInvest, passez aussi user.id à getPublishedProjects :
+  async function handleInvest(projectId: string, amount: number, e: React.MouseEvent) {
     e.stopPropagation();
     if (!user) {
-      toast.warning('Veuillez vous connecter dans "Mon Groupe & Espace Projet" pour voter !');
+      toast.warning('Veuillez vous connecter pour investir !');
+      return;
+    }
+
+    if (amount <= 0 || amount > budget) {
+      toast.error("Montant d'investissement invalide.");
       return;
     }
 
     try {
-      const res = await toggleUniqueVote(user.id, projectId, myVoteProjectId);
-      setMyVoteProjectId(res.votedProjectId);
-      window.dispatchEvent(new Event('vote-updated'));
-
-      if (res.action === 'added') toast.success('Votre unique voix a bien été attribuée ! 🎉');
-      if (res.action === 'moved') toast.info('Votre voix unique a été déplacée sur ce projet.');
-      if (res.action === 'removed') toast('Votre vote a été retiré. Vous avez à nouveau 1 voix disponible.');
-
-      const updated = await getPublishedProjects();
+      const res = await investCyberCoins(user.id, projectId, amount);
+      setBudget(res.remaining_budget);
+      toast.success(`Investissement de ${amount} Cyber-Coins réussi ! 🚀`);
+      
+      // Mettre à jour la liste des projets
+      const updated = await getPublishedProjects(user.id); // <-- MODIFIÉ ICI
       setProjects(updated);
+      
+      window.dispatchEvent(new CustomEvent('budget-updated', { detail: res.remaining_budget }));
     } catch (err: any) {
-      toast.error('Impossible de voter : ' + err.message);
+      toast.error(err.message);
     }
   }
 
@@ -76,14 +83,14 @@ export default function GalleryPage() {
         <div>
           <h1 className="text-3xl font-bold">Galerie des Projets</h1>
           <p className="text-slate-400 mt-1">
-            Découvrez tous les projets du Hackathon et soutenez votre favori avec votre unique voix.
+            Découvrez les projets du Hackathon et investissez judicieusement vos {budget > 0 ? budget : 500} Cyber-Coins.
           </p>
         </div>
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher un projet ou un groupe..."
+          placeholder="Rechercher un projet ou une équipe..."
           className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm w-72 focus:outline-none focus:border-cyan-400"
         />
       </div>
@@ -94,7 +101,7 @@ export default function GalleryPage() {
         <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-12 text-center space-y-3">
           <p className="text-lg font-semibold">Aucun projet publié pour le moment.</p>
           <p className="text-sm text-slate-400">
-            Rendez-vous dans &quot;Mon Groupe &amp; Espace Projet&quot; pour créer une équipe et publier un projet !
+            Rendez-vous dans "Mon Groupe & Espace Projet" pour publier un projet et lancer la levée de fonds !
           </p>
         </div>
       ) : (
@@ -103,9 +110,8 @@ export default function GalleryPage() {
             <ProjectCard
               key={proj.id}
               project={proj}
-              isMyChoice={myVoteProjectId === proj.id}
-              hasVotedAnything={!!myVoteProjectId}
-              onVote={handleVote}
+              remainingBudget={budget}
+              onInvest={handleInvest}
             />
           ))}
         </div>

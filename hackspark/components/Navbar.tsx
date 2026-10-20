@@ -5,50 +5,46 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { getUserVote } from '@/services/hackathon.services';
+import { getUserBudget } from '@/services/hackathon.services';
 import { toast } from 'sonner';
 
-// 👉 PERSONNALISEZ VOTRE LOGO ET NOM D'APPLICATION ICI :
+// 👉 PERSONNALISEZ VOTRE LOGO
 const BRAND_CONFIG = {
-  name: 'HACKATHON', // Remplacez par le nom de votre événement
-  accentText: 'Upcycling-Challenge',    // Texte en couleur à côté (ou laissez vide '')
-  logoImageUrl: 'Logo_Hackaton_2026-2027.png',      // Ex: '/logo.png' si vous mettez une image dans le dossier public/
-  fallbackIcon: '🚀',    // Icône affichée si logoImageUrl est vide
+  name: 'HACKATHON',
+  accentText: 'Upcycling-Challenge',
+  logoImageUrl: 'Logo_Hackaton_2026-2027.png', // <-- J'ai repris le nom de votre fichier
+  fallbackIcon: '🚀',
 };
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [hasVoted, setHasVoted] = useState(false);
+  const [budget, setBudget] = useState<number>(0);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       const u = data.session?.user ?? null;
       setUser(u);
-      if (u) getUserVote(u.id).then((v) => setHasVoted(!!v));
+      if (u) getUserBudget(u.id).then((b) => setBudget(b));
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       const u = session?.user ?? null;
       setUser(u);
-      if (u) getUserVote(u.id).then((v) => setHasVoted(!!v));
-      else setHasVoted(false);
+      if (u) getUserBudget(u.id).then((b) => setBudget(b));
+      else setBudget(0);
     });
 
-    // Écoute les changements de vote depuis les autres composants
-    const handleVoteUpdate = () => {
-      supabase.auth.getSession().then(({ data }) => {
-        if (data.session?.user) {
-          getUserVote(data.session.user.id).then((v) => setHasVoted(!!v));
-        }
-      });
+    // Écoute les investissements réalisés dans la galerie pour mettre à jour la Navbar
+    const handleBudgetUpdate = (e: any) => {
+      setBudget(e.detail);
     };
-    window.addEventListener('vote-updated', handleVoteUpdate);
+    window.addEventListener('budget-updated', handleBudgetUpdate);
 
     return () => {
       listener.subscription.unsubscribe();
-      window.removeEventListener('vote-updated', handleVoteUpdate);
+      window.removeEventListener('budget-updated', handleBudgetUpdate);
     };
   }, []);
 
@@ -65,7 +61,7 @@ export default function Navbar() {
         <div className="flex items-center gap-8">
           <Link href="/" className="text-xl font-bold flex items-center gap-3">
             {BRAND_CONFIG.logoImageUrl ? (
-              <img src={BRAND_CONFIG.logoImageUrl} alt="Logo" className="h-9 w-auto object-contain rounded-lg" />
+              <img src={'/' + BRAND_CONFIG.logoImageUrl} alt="Logo" className="h-9 w-auto object-contain rounded-lg" />
             ) : (
               <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-lg shadow-md">
                 {BRAND_CONFIG.fallbackIcon}
@@ -92,17 +88,13 @@ export default function Navbar() {
           </nav>
         </div>
 
-        {/* STATUT DU VOTE & PROFIL UTILISATEUR */}
+        {/* STATUT DU BUDGET & PROFIL UTILISATEUR */}
         <div className="flex items-center gap-4">
-          <div
-            className={`px-4 py-1.5 rounded-full text-xs font-semibold ${
-              hasVoted
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                : 'bg-gradient-to-r from-indigo-500 to-cyan-500 text-white'
-            }`}
-          >
-            {hasVoted ? '✅ Voix Unique Utilisée' : '🎟️ 1 Voix Disponible'}
-          </div>
+          {user && (
+            <div className="px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-[0_0_10px_rgba(251,191,36,0.2)]">
+              💰 Budget : {budget} Cyber-Coins
+            </div>
+          )}
 
           {user ? (
             <div className="flex items-center gap-3 text-sm bg-slate-800 px-3.5 py-1.5 rounded-full border border-slate-700">
