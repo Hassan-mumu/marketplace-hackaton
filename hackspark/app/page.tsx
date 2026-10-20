@@ -18,7 +18,7 @@ export default function GalleryPage() {
     loadGallery();
   }, []);
 
- async function loadGallery() {
+  async function loadGallery() {
     setLoading(true);
     try {
       // 1. Récupérer d'abord la session utilisateur
@@ -29,7 +29,7 @@ export default function GalleryPage() {
       // 2. Charger les projets EN PASSANT l'ID de l'utilisateur (pour le filtrage côté serveur)
       const projectsData = await getPublishedProjects(currentUser?.id);
       setProjects(projectsData);
-      
+
       // 3. Charger le budget si l'utilisateur est connecté
       if (currentUser) {
         const remaining = await getUserBudget(currentUser.id);
@@ -59,11 +59,11 @@ export default function GalleryPage() {
       const res = await investCyberCoins(user.id, projectId, amount);
       setBudget(res.remaining_budget);
       toast.success(`Investissement de ${amount} Cyber-Coins réussi ! 🚀`);
-      
+
       // Mettre à jour la liste des projets
       const updated = await getPublishedProjects(user.id); // <-- MODIFIÉ ICI
       setProjects(updated);
-      
+
       window.dispatchEvent(new CustomEvent('budget-updated', { detail: res.remaining_budget }));
     } catch (err: any) {
       toast.error(err.message);
@@ -91,7 +91,7 @@ export default function GalleryPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Rechercher un projet ou une équipe..."
-          className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm w-72 focus:outline-none focus:border-cyan-400"
+          className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm w-72 focus:outline-none focus:border-emerald-400"
         />
       </div>
 

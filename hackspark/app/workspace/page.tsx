@@ -218,7 +218,7 @@ export default function WorkspacePage() {
         className="max-w-md mx-auto bg-slate-900 border border-slate-800 rounded-2xl p-8 space-y-4"
       >
         <div className="text-center space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+          <span className="text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
             Accès Étudiant EPHEC
           </span>
           <h2 className="text-2xl font-bold pt-2">
@@ -241,7 +241,7 @@ export default function WorkspacePage() {
                 placeholder="Ex: Victor Popovitch"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
               />
             </div>
 
@@ -254,7 +254,7 @@ export default function WorkspacePage() {
                 placeholder="Ex: HE203456"
                 value={matricule}
                 onChange={(e) => setMatricule(e.target.value.toUpperCase())}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm font-mono uppercase tracking-wider focus:border-cyan-400 focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm font-mono uppercase tracking-wider focus:border-emerald-400 focus:outline-none"
               />
             </div>
 
@@ -265,7 +265,7 @@ export default function WorkspacePage() {
                 placeholder="Ex: Fullstack Dev, UI/UX, Pitch..."
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
+                className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
               />
             </div>
           </>
@@ -279,7 +279,7 @@ export default function WorkspacePage() {
             placeholder="c.lamand@students.ephec.be"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
+            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
           />
         </div>
 
@@ -291,14 +291,14 @@ export default function WorkspacePage() {
             placeholder="Minimum 6 caractères"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-cyan-400 focus:outline-none"
+            className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
           />
         </div>
 
         <button
           type="submit"
           disabled={authSubmitting}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 font-bold text-sm disabled:opacity-50"
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-500 to-emerald-500 font-bold text-sm disabled:opacity-50"
         >
           {authSubmitting ? 'Vérification...' : isRegistering ? 'Créer mon compte' : 'Se connecter'}
         </button>
@@ -338,7 +338,7 @@ export default function WorkspacePage() {
             />
             <button
               onClick={handleJoinGroup}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 font-semibold text-sm"
+              className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-500 to-emerald-500 font-semibold text-sm"
             >
               Rejoindre
             </button>
@@ -374,18 +374,18 @@ export default function WorkspacePage() {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="space-y-6">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
-          <span className="text-xs uppercase text-cyan-400 font-semibold">Mon Groupe</span>
+          <span className="text-xs uppercase text-emerald-400 font-semibold">Mon Groupe</span>
           <h2 className="text-2xl font-bold">{myGroup.name}</h2>
           <div
             onClick={() => {
               navigator.clipboard.writeText(myGroup.invite_code);
               toast.success('Code copié dans le presse-papiers ! 📋');
             }}
-            className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer hover:border-cyan-400"
+            className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer hover:border-emerald-400"
             title="Cliquez pour copier"
           >
             <span className="text-xs text-slate-400">Code d&apos;invitation (cliquer pour copier) :</span>
-            <span className="font-mono font-bold text-cyan-400 text-lg tracking-widest">
+            <span className="font-mono font-bold text-emerald-400 text-lg tracking-widest">
               {myGroup.invite_code}
             </span>
           </div>
@@ -406,11 +406,10 @@ export default function WorkspacePage() {
         <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <h2 className="text-xl font-bold">Projet de {myGroup.name}</h2>
           <span
-            className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              isPublished
+            className={`px-3 py-1 rounded-full text-xs font-semibold ${isPublished
                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                 : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-            }`}
+              }`}
           >
             {isPublished ? '● Publié' : '● Brouillon'}
           </span>
@@ -452,7 +451,7 @@ export default function WorkspacePage() {
         {/* ZONES D'UPLOAD AVEC APERÇU VISUEL IMMÉDIAT */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="border-2 border-dashed border-slate-700 hover:border-cyan-400 rounded-xl p-4 text-center cursor-pointer bg-slate-950/50 block">
+            <label className="border-2 border-dashed border-slate-700 hover:border-emerald-400 rounded-xl p-4 text-center cursor-pointer bg-slate-950/50 block">
               <div className="text-xs font-semibold">
                 {uploadingType === 'image' ? '⏳ Upload en cours...' : '🖼️ Changer / Uploader une Image'}
               </div>
@@ -475,7 +474,7 @@ export default function WorkspacePage() {
           </div>
 
           <div className="space-y-2">
-            <label className="border-2 border-dashed border-slate-700 hover:border-cyan-400 rounded-xl p-4 text-center cursor-pointer bg-slate-950/50 block">
+            <label className="border-2 border-dashed border-slate-700 hover:border-emerald-400 rounded-xl p-4 text-center cursor-pointer bg-slate-950/50 block">
               <div className="text-xs font-semibold">
                 {uploadingType === 'video' ? '⏳ Upload en cours...' : '🎬 Changer / Uploader une Vidéo (MP4)'}
               </div>
@@ -509,7 +508,7 @@ export default function WorkspacePage() {
           <button
             onClick={() => handleSave(true)}
             disabled={saving}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-cyan-500 text-sm font-bold"
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-emerald-500 text-sm font-bold"
           >
             {saving ? 'Sauvegarde...' : '🚀 Publier le Projet'}
           </button>

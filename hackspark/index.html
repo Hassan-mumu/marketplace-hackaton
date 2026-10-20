@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr" class="dark">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,12 +8,28 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #0b0d17; color: #f8fafc; }
-    .glass { background: rgba(22, 27, 46, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .btn-gradient { background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%); }
-    .btn-gradient:hover { opacity: 0.92; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #0b0d17;
+      color: #f8fafc;
+    }
+
+    .glass {
+      background: rgba(22, 27, 46, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .btn-gradient {
+      background: linear-gradient(135deg, #6366f1 0%, #06b6d4 100%);
+    }
+
+    .btn-gradient:hover {
+      opacity: 0.92;
+    }
   </style>
 </head>
+
 <body class="min-h-screen flex flex-col">
 
   <!-- BARRE DE NAVIGATION -->
@@ -21,11 +38,13 @@
       <div class="flex items-center gap-8">
         <button onclick="switchView('gallery')" class="text-xl font-bold tracking-wider flex items-center gap-2">
           <span class="w-8 h-8 rounded-lg btn-gradient flex items-center justify-center text-white">⚡</span>
-          <span>HACK<span class="text-cyan-400">SPARK</span></span>
+          <span>HACK<span class="text-emerald-400">SPARK</span></span>
         </button>
         <nav class="flex items-center gap-6 text-sm font-medium">
-          <button onclick="switchView('gallery')" id="nav-gallery" class="text-cyan-400 border-b-2 border-cyan-400 pb-1">Galerie des Projets</button>
-          <button onclick="switchView('workspace')" id="nav-workspace" class="text-slate-400 hover:text-white pb-1">Mon Groupe & Espace Projet</button>
+          <button onclick="switchView('gallery')" id="nav-gallery"
+            class="text-emerald-400 border-b-2 border-emerald-400 pb-1">Galerie des Projets</button>
+          <button onclick="switchView('workspace')" id="nav-workspace" class="text-slate-400 hover:text-white pb-1">Mon
+            Groupe & Espace Projet</button>
         </nav>
       </div>
 
@@ -37,7 +56,8 @@
 
         <div class="flex items-center gap-2 bg-slate-800/80 border border-slate-700 rounded-full px-3 py-1">
           <span class="text-xs text-slate-400">Participant :</span>
-          <select id="user-select" onchange="changeUser(this.value)" class="bg-transparent text-sm font-medium text-white focus:outline-none cursor-pointer">
+          <select id="user-select" onchange="changeUser(this.value)"
+            class="bg-transparent text-sm font-medium text-white focus:outline-none cursor-pointer">
             <option value="u1" class="bg-slate-900">Alex D. (Équipe CyberSync)</option>
             <option value="u2" class="bg-slate-900">Sarah C. (Sans groupe)</option>
             <option value="u3" class="bg-slate-900">Lucas M. (Visiteur / Jury)</option>
@@ -55,10 +75,13 @@
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold">Galerie des Projets du Hackathon</h1>
-          <p class="text-slate-400 mt-1">Découvrez les projets conçus en 48h et attribuez votre unique voix à votre favori.</p>
+          <p class="text-slate-400 mt-1">Découvrez les projets conçus en 48h et attribuez votre unique voix à votre
+            favori.</p>
         </div>
         <div class="flex items-center gap-3">
-          <input type="text" id="search-input" oninput="renderGallery()" placeholder="Rechercher un projet, une équipe..." class="bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400 w-64" />
+          <input type="text" id="search-input" oninput="renderGallery()"
+            placeholder="Rechercher un projet, une équipe..."
+            class="bg-slate-900/90 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-400 w-64" />
         </div>
       </div>
 
@@ -159,11 +182,11 @@
 
       if (viewName === 'gallery') {
         document.getElementById('view-gallery').classList.remove('hidden');
-        document.getElementById('nav-gallery').className = 'text-cyan-400 border-b-2 border-cyan-400 pb-1';
+        document.getElementById('nav-gallery').className = 'text-emerald-400 border-b-2 border-emerald-400 pb-1';
         renderGallery();
       } else if (viewName === 'workspace') {
         document.getElementById('view-workspace').classList.remove('hidden');
-        document.getElementById('nav-workspace').className = 'text-cyan-400 border-b-2 border-cyan-400 pb-1';
+        document.getElementById('nav-workspace').className = 'text-emerald-400 border-b-2 border-emerald-400 pb-1';
         renderWorkspace();
       } else if (viewName === 'detail') {
         document.getElementById('view-detail').classList.remove('hidden');
@@ -219,8 +242,8 @@
       const publishedProjects = state.projects.filter(p => {
         const group = state.groups.find(g => g.id === p.groupId);
         const matchesSearch = p.title.toLowerCase().includes(query) ||
-                              p.description.toLowerCase().includes(query) ||
-                              (group && group.name.toLowerCase().includes(query));
+          p.description.toLowerCase().includes(query) ||
+          (group && group.name.toLowerCase().includes(query));
         return p.isPublished && matchesSearch;
       });
 
@@ -229,11 +252,11 @@
         const hasVotedForThis = user.votedProjectId === project.id;
 
         return `
-          <div onclick="openProjectDetail('${project.id}')" class="glass rounded-2xl overflow-hidden hover:border-cyan-400/50 transition cursor-pointer flex flex-col justify-between">
+          <div onclick="openProjectDetail('${project.id}')" class="glass rounded-2xl overflow-hidden hover:border-emerald-400/50 transition cursor-pointer flex flex-col justify-between">
             <div>
               <div class="relative h-48 overflow-hidden bg-slate-900">
                 <img src="${project.imageUrl}" alt="${project.title}" class="w-full h-full object-cover" />
-                <span class="absolute top-3 left-3 bg-slate-950/80 backdrop-blur px-3 py-1 rounded-full text-xs font-medium text-cyan-300 border border-cyan-500/30">
+                <span class="absolute top-3 left-3 bg-slate-950/80 backdrop-blur px-3 py-1 rounded-full text-xs font-medium text-emerald-300 border border-emerald-500/30">
                   Par ${group ? group.name : 'Équipe'}
                 </span>
               </div>
@@ -247,11 +270,10 @@
             </div>
             <div class="px-5 py-4 border-t border-slate-800/80 flex items-center justify-between">
               <span class="text-sm font-semibold text-slate-300">❤️ ${project.votesCount} voix</span>
-              <button onclick="toggleVote('${project.id}', event)" class="px-4 py-1.5 rounded-full text-xs font-semibold transition ${
-                hasVotedForThis
-                  ? 'bg-emerald-500 text-slate-950 font-bold'
-                  : 'btn-gradient text-white'
-              }">
+              <button onclick="toggleVote('${project.id}', event)" class="px-4 py-1.5 rounded-full text-xs font-semibold transition ${hasVotedForThis
+            ? 'bg-emerald-500 text-slate-950 font-bold'
+            : 'btn-gradient text-white'
+          }">
                 ${hasVotedForThis ? '✓ Votre choix (Retirer)' : (user.votedProjectId ? 'Déplacer ma voix ici' : 'Voter')}
               </button>
             </div>
@@ -282,7 +304,7 @@
             <div class="glass rounded-2xl p-6 space-y-4">
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <h1 class="text-3xl font-bold">${project.title}</h1>
-                <span class="text-sm text-cyan-400 font-medium">Groupe : ${group.name}</span>
+                <span class="text-sm text-emerald-400 font-medium">Groupe : ${group.name}</span>
               </div>
               <div class="flex flex-wrap gap-2">
                 ${project.tags.map(t => `<span class="text-xs bg-indigo-500/20 text-indigo-300 px-3 py-1 rounded-full border border-indigo-500/30">${t}</span>`).join('')}
@@ -296,9 +318,8 @@
           <!-- Colonne latérale : Vote & Participants à la conception -->
           <div class="space-y-6">
             <div class="glass rounded-2xl p-6 text-center space-y-4">
-              <button onclick="toggleVote('${project.id}', event)" class="w-full py-3 rounded-xl font-bold text-sm transition shadow-lg ${
-                hasVotedForThis ? 'bg-emerald-500 text-slate-950' : 'btn-gradient text-white'
-              }">
+              <button onclick="toggleVote('${project.id}', event)" class="w-full py-3 rounded-xl font-bold text-sm transition shadow-lg ${hasVotedForThis ? 'bg-emerald-500 text-slate-950' : 'btn-gradient text-white'
+        }">
                 ${hasVotedForThis ? '✓ Vous soutenez ce projet' : 'Attribuer mon unique voix'}
               </button>
               <div class="text-2xl font-bold text-white">${project.votesCount} <span class="text-sm font-normal text-slate-400">voix reçues</span></div>
@@ -343,10 +364,10 @@
             <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 space-y-3 text-left">
               <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Rejoindre un groupe existant (Code à 6 chiffres)</label>
               <div class="flex gap-3">
-                <input id="join-code-input" type="text" maxlength="6" placeholder="Ex: 482905" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-center font-mono text-lg tracking-widest focus:outline-none focus:border-cyan-400" />
+                <input id="join-code-input" type="text" maxlength="6" placeholder="Ex: 482905" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-center font-mono text-lg tracking-widest focus:outline-none focus:border-emerald-400" />
                 <button onclick="joinGroupByCode()" class="px-5 py-2.5 rounded-xl btn-gradient font-semibold text-sm">Rejoindre</button>
               </div>
-              <p class="text-xs text-slate-500">Astuce test : utilisez le code <span class="text-cyan-400 font-mono">482905</span> (CyberSync) ou <span class="text-cyan-400 font-mono">739104</span> (BioCode).</p>
+              <p class="text-xs text-slate-500">Astuce test : utilisez le code <span class="text-emerald-400 font-mono">482905</span> (CyberSync) ou <span class="text-emerald-400 font-mono">739104</span> (BioCode).</p>
             </div>
 
             <div class="text-xs text-slate-500 uppercase">OU</div>
@@ -355,7 +376,7 @@
             <div class="bg-slate-900/80 p-5 rounded-xl border border-slate-800 space-y-3 text-left">
               <label class="text-xs font-semibold uppercase tracking-wider text-slate-400">Créer une nouvelle équipe</label>
               <div class="flex gap-3">
-                <input id="new-group-name" type="text" placeholder="Nom de votre groupe (ex: Team Nova)" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400" />
+                <input id="new-group-name" type="text" placeholder="Nom de votre groupe (ex: Team Nova)" class="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400" />
                 <button onclick="createNewGroup()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 font-semibold text-sm">Créer</button>
               </div>
             </div>
@@ -374,13 +395,13 @@
           <div class="space-y-6">
             <div class="glass rounded-2xl p-6 space-y-4">
               <div class="flex items-center justify-between">
-                <span class="text-xs uppercase tracking-wider text-cyan-400 font-semibold">Mon Groupe</span>
+                <span class="text-xs uppercase tracking-wider text-emerald-400 font-semibold">Mon Groupe</span>
                 <button onclick="leaveGroup()" class="text-xs text-rose-400 hover:underline">Quitter le groupe</button>
               </div>
               <h2 class="text-2xl font-bold">${group.name}</h2>
               <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
                 <span class="text-xs text-slate-400">Code d'invitation :</span>
-                <span class="font-mono font-bold text-cyan-400 tracking-widest text-lg">${group.inviteCode}</span>
+                <span class="font-mono font-bold text-emerald-400 tracking-widest text-lg">${group.inviteCode}</span>
               </div>
             </div>
 
@@ -422,28 +443,28 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Titre du Projet</label>
-                <input id="edit-title" type="text" value="${project.title}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400" />
+                <input id="edit-title" type="text" value="${project.title}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400" />
               </div>
 
               <div>
                 <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Description détaillée</label>
-                <textarea id="edit-desc" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-400">${project.description}</textarea>
+                <textarea id="edit-desc" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-400">${project.description}</textarea>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">URL de l'image de couverture</label>
-                  <input id="edit-img" type="text" value="${project.imageUrl}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400" />
+                  <input id="edit-img" type="text" value="${project.imageUrl}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-400" />
                 </div>
                 <div>
                   <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">URL de la vidéo promotionnelle (MP4)</label>
-                  <input id="edit-video" type="text" value="${project.videoUrl}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400" />
+                  <input id="edit-video" type="text" value="${project.videoUrl}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-400" />
                 </div>
               </div>
 
               <div>
                 <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Technologies / Tags (séparés par des virgules)</label>
-                <input id="edit-tags" type="text" value="${project.tags.join(', ')}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-cyan-400" />
+                <input id="edit-tags" type="text" value="${project.tags.join(', ')}" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-emerald-400" />
               </div>
             </div>
 
@@ -551,4 +572,5 @@
     renderGallery();
   </script>
 </body>
+
 </html>
