@@ -73,19 +73,11 @@ export default function Navbar() {
           </Link>
 
           <nav className="flex gap-6 text-sm font-medium">
-            <Link
-              href="/"
-              className={pathname === '/' ? 'text-cyan-400 border-b-2 border-cyan-400 pb-1' : 'text-slate-400 hover:text-white pb-1'}
-            >
-              Galerie des Projets
-            </Link>
-            <Link
-              href="/workspace"
-              className={pathname.startsWith('/workspace') ? 'text-cyan-400 border-b-2 border-cyan-400 pb-1' : 'text-slate-400 hover:text-white pb-1'}
-            >
-              Mon Groupe & Espace Projet
-            </Link>
+            <Link href="/" className={pathname === '/' ? 'text-cyan-400 border-b-2 border-cyan-400 pb-1' : 'text-slate-400 hover:text-white pb-1'}>Galerie des Projets</Link>
+            <Link href="/workspace" className={pathname.startsWith('/workspace') ? 'text-cyan-400 border-b-2 border-cyan-400 pb-1' : 'text-slate-400 hover:text-white pb-1'}>Mon Groupe & Espace Projet</Link>
+            <Link href="/leaderboard" className={pathname.startsWith('/leaderboard') ? 'text-amber-400 border-b-2 border-amber-400 pb-1' : 'text-slate-400 hover:text-amber-400 pb-1'}>🏆 Podium</Link>
           </nav>
+
         </div>
 
         {/* STATUT DU BUDGET & PROFIL UTILISATEUR */}
@@ -98,10 +90,10 @@ export default function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-3 text-sm bg-slate-800 px-3.5 py-1.5 rounded-full border border-slate-700">
-              <span className="font-medium text-cyan-300">
+             <Link href="/profile" className="font-medium text-cyan-300 hover:underline">
                 {user.user_metadata?.display_name || user.email}
-              </span>
-              <button onClick={handleLogout} className="text-xs text-rose-400 hover:underline">
+              </Link>
+              <button onClick={handleLogout} className="text-xs text-rose-400 hover:underline border-l border-slate-700 pl-3">
                 Déconnexion
               </button>
             </div>

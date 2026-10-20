@@ -195,3 +195,37 @@ export async function saveTeamProject(groupId: string, payload: any) {
 
   if (error) throw error;
 }
+
+// --- GESTION DU PROFIL UTILISATEUR ---
+export async function getUserProfile(userId: string) {
+  const [{ data: profile }, { data: membership }] = await Promise.all([
+    supabase.from('student_profiles').select('*').eq('user_id', userId).single(),
+    supabase.from('group_members').select('role').eq('user_id', userId).maybeSingle(),
+  ]);
+  return { ...profile, role: membership?.role || '' };
+}
+
+export async function updateUserProfile(userId: string, displayName: string, role: string) {
+  // 1. Mise à jour des métadonnées de l'authentification (ce qui gère le nom affiché dans la session)
+  const { error: authErr } = await supabase.auth.updateUser({
+    data: { display_name: displayName, role: role }
+  });
+  if (authErr) throw authErr;
+
+  // 2. Mise à jour de la table des profils étudiants
+  await supabase.from('student_profiles').update({ display_name: displayName }).eq('user_id', userId);
+
+  // 3. Mise à jour de la table des membres du groupe (s'il est dans un groupe)
+  await supabase.from('group_members').update({ display_name: displayName, role: role }).eq('user_id', userId);
+}
+
+// --- PARAMÈTRES DU PODIUM ---
+export async function getPlatformSettings() {
+  const { data } = await supabase.from('platform_settings').select('*').eq('id', 1).single();
+  return data || { is_podium_visible: false };
+}
+
+export async function togglePodiumVisibility(isVisible: boolean) {
+  const { error } = await supabase.from('platform_settings').update({ is_podium_visible: isVisible }).eq('id', 1);
+  if (error) throw error;
+}
