@@ -41,7 +41,7 @@ function ProjectDetailContent() {
           checkIfAdmin(currentUser.id),
           supabase.from('group_members').select('group_id').eq('user_id', currentUser.id).maybeSingle(),
         ]);
-        
+
         setBudget(remaining);
         setIsAdmin(adminStatus);
         setUserGroupId(membership.data?.group_id || null);
@@ -67,7 +67,7 @@ function ProjectDetailContent() {
       const res = await investCyberCoins(user.id, project.id, investAmount);
       setBudget(res.remaining_budget);
       toast.success(`Investissement de ${investAmount} Cyber-Coins réussi ! 🚀`);
-      
+
       window.dispatchEvent(new CustomEvent('budget-updated', { detail: res.remaining_budget }));
       await loadDetail();
       setInvestAmount(50);
@@ -111,7 +111,7 @@ function ProjectDetailContent() {
             )}
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">{project.title}</h1>
-              <span className="text-sm text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+              <span className="text-sm text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
                 Groupe : {project.group_name}
               </span>
             </div>
@@ -155,7 +155,7 @@ function ProjectDetailContent() {
                   <button
                     onClick={handleInvest}
                     disabled={budget <= 0}
-                    className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-cyan-500 text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-emerald-500 text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Investir
                   </button>
