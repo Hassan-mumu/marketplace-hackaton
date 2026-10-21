@@ -5,7 +5,10 @@ import { supabase } from '@/lib/supabase';
 import { getPublishedProjects, checkIfAdmin, getPlatformSettings, togglePodiumVisibility } from '@/services/hackathon.services';
 import { toast } from 'sonner';
 
-// export const dynamic = 'force-dynamic';
+// Importation des icônes
+import { Lock, Eye, EyeOff, Loader2, Trophy, Medal } from 'lucide-react';
+
+//export const dynamic = 'force-dynamic';
 
 export default function LeaderboardPage() {
     const [projects, setProjects] = useState<any[]>([]);
@@ -25,7 +28,7 @@ export default function LeaderboardPage() {
             const [adminStatus, settings, projs] = await Promise.all([
                 userId ? checkIfAdmin(userId) : Promise.resolve(false),
                 getPlatformSettings(),
-                getPublishedProjects(userId) // getPublishedProjects gère déjà le tri par total_funds
+                getPublishedProjects(userId)
             ]);
 
             setIsAdmin(adminStatus);
@@ -51,15 +54,24 @@ export default function LeaderboardPage() {
         }
     }
 
-    if (loading) return <div className="text-center py-20 text-slate-400">Chargement du classement...</div>;
+    if (loading) return (
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-400" />
+            <p>Chargement du classement...</p>
+        </div>
+    );
 
     // Sécurité : Si pas admin ET podium caché
     if (!isAdmin && !isVisible) {
         return (
-            <div className="max-w-2xl mx-auto text-center py-32 space-y-4">
-                <div className="text-6xl">🔒</div>
-                <h1 className="text-3xl font-bold text-white">Classement Secret</h1>
-                <p className="text-slate-400">Le classement final est actuellement masqué par les administrateurs. Suspense jusqu'à la cérémonie de clôture !</p>
+            <div className="max-w-2xl mx-auto text-center py-32 space-y-6">
+                <div className="mx-auto w-24 h-24 bg-slate-900 rounded-full flex items-center justify-center border border-slate-800 shadow-xl">
+                    <Lock className="w-12 h-12 text-amber-400" />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-bold text-white mb-2">Classement Secret</h1>
+                    <p className="text-slate-400">Le classement final est actuellement masqué par les administrateurs. Suspense jusqu'à la cérémonie de clôture !</p>
+                </div>
             </div>
         );
     }
@@ -71,16 +83,22 @@ export default function LeaderboardPage() {
         <div className="max-w-5xl mx-auto space-y-12">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">Podium du Hackathon</h1>
+                    <h1 className="text-4xl font-black bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent flex items-center gap-3">
+                        <Trophy className="w-8 h-8 text-amber-500" />
+                        Podium du Hackathon
+                    </h1>
                     <p className="text-slate-400 mt-2">Découvrez les projets ayant levé le plus de Cyber-Coins.</p>
                 </div>
 
                 {isAdmin && (
-                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center gap-4">
-                        <span className="text-sm font-semibold">Visibilité Étudiants :</span>
+                    <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center gap-4 shadow-lg">
+                        <span className="text-sm font-semibold flex items-center gap-2 text-slate-300">
+                            {isVisible ? <Eye className="w-4 h-4 text-emerald-400" /> : <EyeOff className="w-4 h-4 text-slate-500" />}
+                            Visibilité Étudiants :
+                        </span>
                         <button
                             onClick={handleToggleVisibility}
-                            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${isVisible ? 'bg-emerald-500' : 'bg-slate-700'}`}
+                            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors focus:outline-none ${isVisible ? 'bg-emerald-500' : 'bg-slate-700'}`}
                         >
                             <span className={`inline-block h-5 w-5 transform rounded-full bg-white transition-transform ${isVisible ? 'translate-x-8' : 'translate-x-1'}`} />
                         </button>
@@ -92,7 +110,9 @@ export default function LeaderboardPage() {
             </div>
 
             {projects.length === 0 ? (
-                <p className="text-center text-slate-500 py-10">Aucun investissement n'a encore été réalisé.</p>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500 shadow-sm">
+                    Aucun investissement n'a encore été réalisé.
+                </div>
             ) : (
                 <>
                     {/* PODIUM TOP 3 */}
@@ -100,7 +120,10 @@ export default function LeaderboardPage() {
                         {/* 2ème PLACE (Argent) */}
                         {top3[1] && (
                             <div className="order-2 md:order-1 bg-slate-900 border-t-4 border-slate-300 rounded-t-2xl p-6 text-center transform md:scale-95 shadow-lg relative">
-                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-slate-300 rounded-full flex items-center justify-center text-2xl font-black text-slate-900 shadow-md">2</div>
+                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-slate-300 rounded-full flex items-center justify-center text-slate-900 shadow-md">
+                                    <Medal className="w-6 h-6" />
+                                </div>
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-black text-slate-900 bg-white/80 px-2 rounded-full">2ND</div>
                                 <h3 className="text-xl font-bold mt-4 line-clamp-1">{top3[1].title}</h3>
                                 <p className="text-sm text-emerald-400 my-2">{top3[1].group_name}</p>
                                 <div className="text-2xl font-black text-white">{top3[1].total_funds} <span className="text-xs text-slate-400">CC</span></div>
@@ -110,7 +133,10 @@ export default function LeaderboardPage() {
                         {/* 1ère PLACE (Or) */}
                         {top3[0] && (
                             <div className="order-1 md:order-2 bg-gradient-to-b from-amber-500/20 to-slate-900 border-t-4 border-amber-400 rounded-t-2xl p-8 text-center shadow-[0_-10px_30px_rgba(251,191,36,0.15)] relative z-10">
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-amber-400 rounded-full flex items-center justify-center text-4xl font-black text-amber-950 shadow-xl border-4 border-slate-950">1</div>
+                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 w-16 h-16 bg-amber-400 rounded-full flex items-center justify-center text-amber-950 shadow-xl border-4 border-slate-950">
+                                    <Trophy className="w-8 h-8 fill-current" />
+                                </div>
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-black text-amber-950 bg-white/90 px-3 rounded-full">1ER</div>
                                 <h3 className="text-2xl font-bold mt-6 line-clamp-1 text-amber-300">{top3[0].title}</h3>
                                 <p className="text-sm text-emerald-400 my-2">{top3[0].group_name}</p>
                                 <div className="text-4xl font-black text-white mt-4">{top3[0].total_funds} <span className="text-sm text-slate-400">CC</span></div>
@@ -120,7 +146,10 @@ export default function LeaderboardPage() {
                         {/* 3ème PLACE (Bronze) */}
                         {top3[2] && (
                             <div className="order-3 md:order-3 bg-slate-900 border-t-4 border-amber-700 rounded-t-2xl p-6 text-center transform md:scale-90 shadow-lg relative">
-                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-amber-700 rounded-full flex items-center justify-center text-2xl font-black text-amber-100 shadow-md">3</div>
+                                <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-amber-700 rounded-full flex items-center justify-center text-amber-100 shadow-md">
+                                    <Medal className="w-6 h-6" />
+                                </div>
+                                <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-black text-amber-950 bg-white/80 px-2 rounded-full">3RD</div>
                                 <h3 className="text-xl font-bold mt-4 line-clamp-1">{top3[2].title}</h3>
                                 <p className="text-sm text-emerald-400 my-2">{top3[2].group_name}</p>
                                 <div className="text-2xl font-black text-white">{top3[2].total_funds} <span className="text-xs text-slate-400">CC</span></div>
