@@ -4,10 +4,15 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { getProjectById, getUserBudget, investCyberCoins, checkIfAdmin } from '@/services/hackathon.services';
+import { 
+  getProjectById, 
+  getUserBudget, 
+  investCyberCoins, 
+  checkIfAdmin,
+  getPlatformSettings // <-- Ajout de l'import
+} from '@/services/hackathon.services';
 import { toast } from 'sonner';
 
-// Composant enfant qui contient toute la logique et le useParams
 function ProjectDetailContent() {
   const { id } = useParams() as { id: string };
   const router = useRouter();
@@ -19,6 +24,9 @@ function ProjectDetailContent() {
   const [userGroupId, setUserGroupId] = useState<string | null>(null);
   const [investAmount, setInvestAmount] = useState(50);
   const [loading, setLoading] = useState(true);
+  
+  // <-- Nouvel état pour savoir si les investissements sont ouverts
+  const [isInvestmentOpen, setIsInvestmentOpen] = useState(true);
 
   useEffect(() => {
     loadDetail();
@@ -31,9 +39,16 @@ function ProjectDetailContent() {
       const currentUser = sessionData.session?.user ?? null;
       setUser(currentUser);
 
-      const { project: proj, members: team } = await getProjectById(id);
+      // Récupération du projet et des paramètres globaux
+      const [{ project: proj, members: team }, settings] = await Promise.all([
+        getProjectById(id),
+        getPlatformSettings() // <-- Lecture du paramètre
+      ]);
+      
       setProject(proj);
       setMembers(team);
+      // Si le paramètre n'existe pas encore, on laisse ouvert par défaut
+      setIsInvestmentOpen(settings?.is_investment_open ?? true); 
 
       if (currentUser) {
         const [remaining, adminStatus, membership] = await Promise.all([
@@ -58,6 +73,12 @@ function ProjectDetailContent() {
       toast.warning('Connectez-vous pour pouvoir investir !');
       return;
     }
+
+    // --- AJOUT DU POP-UP DE CONFIRMATION ---
+    const confirmed = window.confirm("Donné c'est donné, reprendre c'est Volé !! \n\nConfirmez-vous cet investissement ?");
+    if (!confirmed) return; // Stoppe tout si l'étudiant clique sur "Annuler"
+    // ----------------------------------------
+
     if (investAmount <= 0 || investAmount > budget) {
       toast.error("Montant invalide ou budget insuffisant.");
       return;
@@ -149,18 +170,22 @@ function ProjectDetailContent() {
                     max={budget > 0 ? budget : 10}
                     value={investAmount}
                     onChange={(e) => setInvestAmount(Number(e.target.value))}
-                    disabled={budget <= 0}
+                    disabled={budget <= 0 || !isInvestmentOpen} // <-- Désactivé si clôturé
                     className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-center font-mono disabled:opacity-50"
                   />
                   <button
                     onClick={handleInvest}
-                    disabled={budget <= 0}
+                    disabled={budget <= 0 || !isInvestmentOpen} // <-- Désactivé si clôturé
                     className="px-6 py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-indigo-500 to-emerald-500 text-white hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Investir
+                    {isInvestmentOpen ? "Investir" : "Clôturé"} {/* <-- Changement de texte */}
                   </button>
                 </div>
-                {budget > 0 ? (
+                
+                {/* Affichage des messages sous le bouton */}
+                {!isInvestmentOpen ? (
+                  <div className="text-xs text-rose-400 font-bold">Les investissements sont terminés.</div>
+                ) : budget > 0 ? (
                   <div className="text-xs text-slate-400">Budget dispo : <span className="text-amber-400 font-bold">{budget} CC</span></div>
                 ) : (
                   <div className="text-xs text-rose-400">Votre budget est épuisé.</div>
@@ -194,7 +219,6 @@ function ProjectDetailContent() {
   );
 }
 
-// Composant principal exporté qui enveloppe le contenu dans Suspense
 export default function ProjectDetailPage() {
   return (
     <Suspense fallback={<div className="text-slate-400 flex justify-center py-10">Chargement de la page...</div>}>

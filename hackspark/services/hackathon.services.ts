@@ -229,3 +229,7 @@ export async function togglePodiumVisibility(isVisible: boolean) {
   const { error } = await supabase.from('platform_settings').update({ is_podium_visible: isVisible }).eq('id', 1);
   if (error) throw error;
 }
+export async function toggleInvestments(isOpen: boolean) {
+  const { error } = await supabase.from('platform_settings').update({ is_investment_open: isOpen }).eq('id', 1);
+  if (error) throw error;
+}

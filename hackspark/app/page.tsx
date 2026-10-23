@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { getPublishedProjects, getUserBudget, investCyberCoins } from '@/services/hackathon.services';
+import { getPublishedProjects, getUserBudget, investCyberCoins, getPlatformSettings } from '@/services/hackathon.services'; // <-- Ajout de getPlatformSettings
 import ProjectCard from '@/components/ProjectCard';
 import { toast } from 'sonner';
 
@@ -13,6 +13,9 @@ export default function GalleryPage() {
   const [budget, setBudget] = useState<number>(0);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  
+  // <-- Nouvel état pour savoir si les investissements sont ouverts
+  const [isInvestmentOpen, setIsInvestmentOpen] = useState(true);
 
   useEffect(() => {
     loadGallery();
@@ -26,9 +29,14 @@ export default function GalleryPage() {
       const currentUser = sessionData.session?.user ?? null;
       setUser(currentUser);
 
-      // 2. Charger les projets EN PASSANT l'ID de l'utilisateur (pour le filtrage côté serveur)
-      const projectsData = await getPublishedProjects(currentUser?.id);
+      // 2. Charger les projets ET les paramètres globaux (pour l'ouverture des investissements)
+      const [projectsData, settings] = await Promise.all([
+        getPublishedProjects(currentUser?.id),
+        getPlatformSettings() // <-- Lecture du paramètre
+      ]);
+      
       setProjects(projectsData);
+      setIsInvestmentOpen(settings?.is_investment_open ?? true);
 
       // 3. Charger le budget si l'utilisateur est connecté
       if (currentUser) {
@@ -42,7 +50,6 @@ export default function GalleryPage() {
     }
   }
 
-  // ET DANS handleInvest, passez aussi user.id à getPublishedProjects :
   async function handleInvest(projectId: string, amount: number, e: React.MouseEvent) {
     e.stopPropagation();
     if (!user) {
@@ -61,7 +68,7 @@ export default function GalleryPage() {
       toast.success(`Investissement de ${amount} Cyber-Coins réussi ! 🚀`);
 
       // Mettre à jour la liste des projets
-      const updated = await getPublishedProjects(user.id); // <-- MODIFIÉ ICI
+      const updated = await getPublishedProjects(user.id); 
       setProjects(updated);
 
       window.dispatchEvent(new CustomEvent('budget-updated', { detail: res.remaining_budget }));
@@ -111,6 +118,7 @@ export default function GalleryPage() {
               key={proj.id}
               project={proj}
               remainingBudget={budget}
+              isInvestmentOpen={isInvestmentOpen} // <-- PASSE LE PARAMÈTRE À LA CARTE
               onInvest={handleInvest}
             />
           ))}

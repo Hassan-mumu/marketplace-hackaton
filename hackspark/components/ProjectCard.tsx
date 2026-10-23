@@ -8,10 +8,12 @@ import { Coins, CheckCircle2, Star, Users } from 'lucide-react';
 interface ProjectCardProps {
   project: any;
   remainingBudget: number;
+  // Ajout du statut d'ouverture
+  isInvestmentOpen: boolean; 
   onInvest: (projectId: string, amount: number, e: React.MouseEvent) => void;
 }
 
-export default function ProjectCard({ project, remainingBudget, onInvest }: ProjectCardProps) {
+export default function ProjectCard({ project, remainingBudget, isInvestmentOpen, onInvest }: ProjectCardProps) {
   const router = useRouter();
   const [investAmount, setInvestAmount] = useState(50);
 
@@ -19,11 +21,21 @@ export default function ProjectCard({ project, remainingBudget, onInvest }: Proj
   const isAdmin = project.is_admin;
   const myInvestment = project.my_investment || 0;
 
+  // --- NOUVELLE FONCTION AVEC LE POP-UP ---
+  const handleInvestClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const confirmed = window.confirm("Donné c'est donné, reprendre c'est Volé !! \n\nConfirmez-vous cet investissement ?");
+    if (!confirmed) return;
+    
+    onInvest(project.id, investAmount, e);
+  };
+
   return (
     <div
       onClick={() => router.push(`/project/${project.id}`)}
-      className={`bg-slate-900/80 border rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer flex flex-col justify-between group ${isMyProject ? 'border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.15)]' : 'border-slate-800 hover:border-emerald-500/50 hover:shadow-xl hover:-translate-y-1'
-        }`}
+      className={`bg-slate-900/80 border rounded-2xl overflow-hidden transition-all duration-300 cursor-pointer flex flex-col justify-between group ${
+        isMyProject ? 'border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.15)]' : 'border-slate-800 hover:border-emerald-500/50 hover:shadow-xl hover:-translate-y-1'
+      }`}
     >
       <div>
         <div className="relative h-48 bg-slate-950 overflow-hidden">
@@ -53,7 +65,6 @@ export default function ProjectCard({ project, remainingBudget, onInvest }: Proj
       </div>
 
       <div className="px-5 py-4 border-t border-slate-800/50 flex items-center justify-between gap-3 bg-slate-950/40">
-
         <div>
           {isAdmin ? (
             <>
@@ -83,15 +94,15 @@ export default function ProjectCard({ project, remainingBudget, onInvest }: Proj
               max={remainingBudget > 0 ? remainingBudget : 10}
               value={investAmount}
               onChange={(e) => setInvestAmount(Number(e.target.value))}
-              disabled={remainingBudget <= 0}
+              disabled={remainingBudget <= 0 || !isInvestmentOpen} // Bloqué si clôturé
               className="w-16 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-center font-mono focus:border-emerald-400 focus:outline-none disabled:opacity-50"
             />
             <button
-              onClick={(e) => onInvest(project.id, investAmount, e)}
-              disabled={remainingBudget <= 0}
+              onClick={handleInvestClick} // Nouvel appel avec le pop-up
+              disabled={remainingBudget <= 0 || !isInvestmentOpen} // Bloqué si clôturé
               className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-950 hover:bg-emerald-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
             >
-              Investir
+              {isInvestmentOpen ? 'Investir' : 'Clôturé'}
             </button>
           </div>
         )}
