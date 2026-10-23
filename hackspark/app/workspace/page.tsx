@@ -83,20 +83,27 @@ export default function WorkspacePage() {
     }
   }
 
-  async function handleAuth(e: React.FormEvent) {
+async function handleAuth(e: React.FormEvent) {
     e.preventDefault();
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanMatricule = matricule.trim().toUpperCase();
 
     if (isRegistering) {
-      if (!cleanEmail.endsWith('@students.ephec.be') && !cleanEmail.endsWith('@students.epehc.be')) {
-        return toast.error("Seules les adresses @students.ephec.be sont autorisées à s'inscrire.");
+      // Vérifie si c'est un étudiant ou un professeur
+      const isStudent = cleanEmail.endsWith('@students.ephec.be') || cleanEmail.endsWith('@students.epehc.be');
+      const isTeacher = cleanEmail.endsWith('@ephec.be');
+
+      if (!isStudent && !isTeacher) {
+        return toast.error("Seules les adresses EPHEC (@students.ephec.be ou @ephec.be) sont autorisées.");
       }
 
-      const matriculeRegex = /^(HE\d{6}|ERA\d{5}|BDA\d{5})$/;
-      if (!matriculeRegex.test(cleanMatricule)) {
-        return toast.error('Format de matricule invalide (ex: HExxxxxx, ERAxxxxx ou BDAxxxxx).');
+      // Vérification stricte uniquement pour les étudiants
+      if (isStudent) {
+        const matriculeRegex = /^(HE\d{6}|ERA\d{5}|BDA\d{5})$/;
+        if (!matriculeRegex.test(cleanMatricule)) {
+          return toast.error('Format de matricule étudiant invalide (ex: HExxxxxx, ERAxxxxx ou BDAxxxxx).');
+        }
       }
     }
 
@@ -115,7 +122,7 @@ export default function WorkspacePage() {
           },
         });
         if (error) throw error;
-        toast.success(`Compte créé avec succès ! Bienvenue ${displayName} (${cleanMatricule})`);
+        toast.success(`Compte créé avec succès ! Bienvenue ${displayName} 🎉`);
         setUser(data.user);
         if (data.user) await loadWorkspace(data.user.id);
       } else {
@@ -134,7 +141,6 @@ export default function WorkspacePage() {
       setAuthSubmitting(false);
     }
   }
-
   async function handleCreateGroup() {
     if (!newGroupName.trim()) return toast.warning('Veuillez donner un nom à votre groupe.');
     try {
@@ -235,7 +241,7 @@ export default function WorkspacePage() {
           </h2>
           <p className="text-xs text-slate-400">
             {isRegistering
-              ? 'Un seul compte par étudiant (1 matricule = 1 portefeuille).'
+              ? 'Un seul compte par étudiant.'
               : 'Connectez-vous avec votre adresse étudiante.'}
           </p>
         </div>
