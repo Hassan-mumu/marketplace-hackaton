@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { supabase } from '@/lib/supabase';
 
-// --- GALERIE & PROJETS PUBLICS (CROWDFUNDING CONFIDENTIEL) ---
 export async function getPublishedProjects(userId: string | null = null) {
-  // 1. On récupère d'abord tous les projets publiés
   const { data: projects, error } = await supabase
     .from('projects_with_stats')
     .select('*')
@@ -13,18 +11,16 @@ export async function getPublishedProjects(userId: string | null = null) {
   if (error) throw error;
   if (!projects || projects.length === 0) return [];
 
-  // 2. Si personne n'est connecté, on masque toutes les infos d'argent
   if (!userId) {
     return projects.map((p) => ({
       ...p,
       total_funds: 0,
       investors_count: 0,
       my_investment: 0,
-      investments_data: undefined, // Sécurité : on efface la trace brute
+      investments_data: undefined, 
     }));
   }
 
-  // 3. On vérifie si l'utilisateur connecté est un Admin et on récupère son groupe
   const [{ data: profile }, { data: membership }] = await Promise.all([
     supabase.from('student_profiles').select('is_admin').eq('user_id', userId).maybeSingle(),
     supabase.from('group_members').select('group_id').eq('user_id', userId).maybeSingle(),
@@ -33,21 +29,18 @@ export async function getPublishedProjects(userId: string | null = null) {
   const isAdmin = profile?.is_admin || false;
   const userGroupId = membership?.group_id || null;
 
-  // 4. On filtre les données avant de les envoyer au navigateur
   return projects.map((p) => {
-    // Calculer combien l'utilisateur courant a investi dans ce projet
     const myInvestments = (p.investments_data as any[] || []).filter((inv) => inv.user_id === userId);
     const myTotalInvestment = myInvestments.reduce((acc, curr) => acc + curr.amount, 0);
 
     return {
       ...p,
       my_investment: myTotalInvestment,
-      is_my_group: p.group_id_direct === userGroupId, // Vrai si c'est le projet de l'étudiant
-      // Si Admin : on laisse les vrais totaux. Si Étudiant : on les masque à 0.
+      is_my_group: p.group_id_direct === userGroupId, 
       total_funds: isAdmin ? p.total_funds : 0,
       investors_count: isAdmin ? p.investors_count : 0,
       is_admin: isAdmin,
-      investments_data: undefined, // Toujours effacer la liste brute par sécurité
+      investments_data: undefined, 
     };
   });
 }
@@ -69,16 +62,25 @@ export async function getProjectById(projectId: string) {
   return { project, members: members || [] };
 }
 
-// --- SYSTÈME D'INVESTISSEMENT (CROWDFUNDING EN CYBER-COINS) ---
 export async function getUserBudget(userId: string) {
+  const { data: profile } = await supabase
+    .from('student_profiles')
+    .select('is_admin')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  const maxBudget = profile?.is_admin ? 2000 : 500;
+
   const { data, error } = await supabase
     .from('investments')
     .select('amount')
     .eq('user_id', userId);
 
-  if (error) return 500;
+  if (error) return maxBudget;
+  
   const spent = (data || []).reduce((acc: number, curr: any) => acc + curr.amount, 0);
-  return 500 - spent;
+  
+  return maxBudget - spent;
 }
 
 export async function investCyberCoins(userId: string, projectId: string, amount: number) {
@@ -103,7 +105,6 @@ export async function checkIfAdmin(userId: string) {
   return data?.is_admin ?? false;
 }
 
-// --- VALIDATION EPHEC (LISTE BLANCHE) ---
 export async function checkStudentEligibility(matricule: string, email: string) {
   const { data, error } = await supabase.rpc('verify_student_eligibility', {
     p_matricule: matricule,
@@ -114,7 +115,6 @@ export async function checkStudentEligibility(matricule: string, email: string) 
   return data as { allowed: boolean; error?: string };
 }
 
-// --- GROUPES & ESPACE PROJET ---
 export async function getUserWorkspaceData(userId: string) {
   const { data: membership } = await supabase
     .from('group_members')
@@ -196,7 +196,6 @@ export async function saveTeamProject(groupId: string, payload: any) {
   if (error) throw error;
 }
 
-// --- GESTION DU PROFIL UTILISATEUR ---
 export async function getUserProfile(userId: string) {
   const [{ data: profile }, { data: membership }] = await Promise.all([
     supabase.from('student_profiles').select('*').eq('user_id', userId).single(),
@@ -206,20 +205,16 @@ export async function getUserProfile(userId: string) {
 }
 
 export async function updateUserProfile(userId: string, displayName: string, role: string) {
-  // 1. Mise à jour des métadonnées de l'authentification (ce qui gère le nom affiché dans la session)
   const { error: authErr } = await supabase.auth.updateUser({
     data: { display_name: displayName, role: role }
   });
   if (authErr) throw authErr;
 
-  // 2. Mise à jour de la table des profils étudiants
   await supabase.from('student_profiles').update({ display_name: displayName }).eq('user_id', userId);
 
-  // 3. Mise à jour de la table des membres du groupe (s'il est dans un groupe)
   await supabase.from('group_members').update({ display_name: displayName, role: role }).eq('user_id', userId);
 }
 
-// --- PARAMÈTRES DU PODIUM ---
 export async function getPlatformSettings() {
   const { data } = await supabase.from('platform_settings').select('*').eq('id', 1).single();
   return data || { is_podium_visible: false };
