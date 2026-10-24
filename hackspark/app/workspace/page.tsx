@@ -30,7 +30,7 @@ export default function WorkspacePage() {
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [matricule, setMatricule] = useState('');
-  const [role, setRole] = useState('Fullstack Dev');
+  const [role, setRole] = useState('');
   const [authSubmitting, setAuthSubmitting] = useState(false);
 
   // États Groupe & Projet
@@ -239,11 +239,6 @@ async function handleAuth(e: React.FormEvent) {
           <h2 className="text-2xl font-bold pt-2">
             {isRegistering ? 'Inscription Hackathon' : 'Connexion Étudiant'}
           </h2>
-          <p className="text-xs text-slate-400">
-            {isRegistering
-              ? 'Un seul compte par étudiant.'
-              : 'Connectez-vous avec votre adresse étudiante.'}
-          </p>
         </div>
 
         {isRegistering && (
@@ -261,7 +256,7 @@ async function handleAuth(e: React.FormEvent) {
             </div>
 
             <div>
-              <label className="text-xs text-slate-400 block mb-1">Matricule EPHEC (HE/ERA/BDA + 6 chiffres)</label>
+              <label className="text-xs text-slate-400 block mb-1">Matricule EPHEC </label>
               <input
                 type="text"
                 required
@@ -277,7 +272,7 @@ async function handleAuth(e: React.FormEvent) {
               <label className="text-xs text-slate-400 block mb-1">Rôle dans l&apos;équipe</label>
               <input
                 type="text"
-                placeholder="Ex: Fullstack Dev, UI/UX, Pitch..."
+                placeholder="Le ronchcon de l'équipe, l'ambianceur, etc."
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
                 className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:border-emerald-400 focus:outline-none"
@@ -287,7 +282,7 @@ async function handleAuth(e: React.FormEvent) {
         )}
 
         <div>
-          <label className="text-xs text-slate-400 block mb-1">Email étudiant (@students.ephec.be)</label>
+          <label className="text-xs text-slate-400 block mb-1">Email étudiant</label>
           <input
             type="email"
             required
