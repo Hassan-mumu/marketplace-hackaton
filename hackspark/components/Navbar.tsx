@@ -7,7 +7,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getUserBudget } from '@/services/hackathon.services';
 import { toast } from 'sonner';
-// Ajout des icônes Menu et X pour la navigation mobile
 import { LayoutGrid, Users, Trophy, Wallet, UserCircle, LogOut, Code2, Menu, X } from 'lucide-react';
 
 const BRAND_CONFIG = {
@@ -21,8 +20,6 @@ export default function Navbar() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [budget, setBudget] = useState<number>(0);
-  
-  // Nouvel état pour le menu mobile
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -51,11 +48,10 @@ export default function Navbar() {
   async function handleLogout() {
     await supabase.auth.signOut();
     toast.success('Vous êtes déconnecté.');
-    setIsMenuOpen(false); // Ferme le menu au cas où on se déconnecte depuis mobile
+    setIsMenuOpen(false);
     router.push('/');
   }
 
-  // Empêcher le défilement de la page quand le menu mobile est ouvert
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -66,13 +62,14 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-6 py-3 shadow-lg">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 px-4 md:px-6 py-3 shadow-lg">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 md:gap-4">
           
-          <div className="flex items-center gap-8">
-            <Link href="/" className="text-xl font-bold flex items-center gap-3">
+          <div className="flex items-center gap-4 md:gap-8">
+            <Link href="/" className="text-xl font-bold flex items-center gap-2 md:gap-3">
               {BRAND_CONFIG.logoImageUrl ? (
-                <img src={'/' + BRAND_CONFIG.logoImageUrl} alt="Logo Hackathon" className="h-16 w-auto object-contain mix-blend-screen" />
+                /* Le logo est plus petit sur mobile (h-12) et reprend sa taille normale sur PC (md:h-16) */
+                <img src={'/' + BRAND_CONFIG.logoImageUrl} alt="Logo Hackathon" className="h-12 md:h-16 w-auto object-contain mix-blend-screen" />
               ) : (
                 <Code2 className="w-8 h-8 text-emerald-400" />
               )}
@@ -81,7 +78,6 @@ export default function Navbar() {
               </span>
             </Link>
 
-            {/* LIENS DESKTOP (cachés sur mobile) */}
             <nav className="hidden md:flex gap-6 text-sm font-semibold">
               <Link href="/" className={`flex items-center gap-2 pb-1 ${pathname === '/' ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-slate-400 hover:text-white'}`}>
                 <LayoutGrid className="w-4 h-4" /> Galerie
@@ -95,16 +91,17 @@ export default function Navbar() {
             </nav>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             {user && (
-              <div className="px-4 py-2 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-2 shadow-[0_0_10px_rgba(251,191,36,0.1)]">
-                <Wallet className="w-4 h-4" />
+              <div className="px-3 py-1.5 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1.5 md:gap-2 shadow-[0_0_10px_rgba(251,191,36,0.1)]">
+                <Wallet className="w-3 h-3 md:w-4 md:h-4" />
                 <span>{budget} CC</span>
               </div>
             )}
 
             {user ? (
-              <div className="flex items-center gap-2 bg-slate-900 px-2 py-1.5 rounded-full border border-slate-800">
+              /* Les boutons Profil et Déco sont cachés sur mobile (hidden md:flex) */
+              <div className="hidden md:flex items-center gap-2 bg-slate-900 px-2 py-1.5 rounded-full border border-slate-800">
                 <Link href="/profile" title="Mon Profil" className="p-1.5 text-emerald-400 hover:bg-slate-800 rounded-full transition">
                   <UserCircle className="w-5 h-5" />
                 </Link>
@@ -114,15 +111,14 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <Link href="/workspace" className="text-xs font-bold px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-lg hidden sm:block">
+              <Link href="/workspace" className="text-xs font-bold px-5 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white transition shadow-lg hidden md:block">
                 Connexion
               </Link>
             )}
 
-            {/* BOUTON MENU HAMBURGER (visible uniquement sur mobile) */}
             <button 
               onClick={() => setIsMenuOpen(true)} 
-              className="md:hidden p-2 text-slate-400 hover:text-white transition"
+              className="md:hidden p-1.5 text-slate-400 hover:text-white transition"
             >
               <Menu className="w-7 h-7" />
             </button>
@@ -130,8 +126,6 @@ export default function Navbar() {
         </div>
       </header>
 
-      {/* MENU LATÉRAL MOBILE */}
-      {/* Fond sombre cliquable pour fermer le menu */}
       {isMenuOpen && (
         <div 
           className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm md:hidden" 
@@ -139,7 +133,6 @@ export default function Navbar() {
         />
       )}
       
-      {/* Tiroir de navigation à gauche */}
       <div 
         className={`fixed inset-y-0 left-0 z-50 w-64 bg-slate-950 border-r border-slate-800 p-6 transform transition-transform duration-300 ease-in-out md:hidden flex flex-col gap-8 shadow-2xl ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -176,8 +169,24 @@ export default function Navbar() {
           </Link>
         </nav>
 
-        {/* Bouton de connexion pour mobile si non connecté */}
-        {!user && (
+        {/* AJOUT : Actions Utilisateur tout en bas du menu */}
+        {user ? (
+          <div className="mt-auto pt-6 border-t border-slate-800 flex flex-col gap-4">
+            <Link 
+              href="/profile" 
+              onClick={() => setIsMenuOpen(false)}
+              className="flex items-center gap-3 text-sm font-semibold text-emerald-400 hover:text-emerald-300 transition"
+            >
+              <UserCircle className="w-5 h-5" /> Mon Profil
+            </Link>
+            <button 
+              onClick={handleLogout}
+              className="flex items-center gap-3 text-sm font-semibold text-rose-400 hover:text-rose-300 transition text-left w-full"
+            >
+              <LogOut className="w-5 h-5" /> Se déconnecter
+            </button>
+          </div>
+        ) : (
           <div className="mt-auto pt-6 border-t border-slate-800">
             <Link 
               href="/workspace" 
